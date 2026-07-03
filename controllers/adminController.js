@@ -403,10 +403,21 @@ exports.uploadSongs = async (req, res, next) => {
       return res.status(400).json({ message: 'No audio file found in upload' });
     }
 
+    let audioUrl = '';
+    let imageUrl = req.body.imageUrl || '';
+    
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      audioUrl = audioFile.path;
+      if (imageFile) imageUrl = imageFile.path;
+    } else {
+      audioUrl = `/uploads/${audioFile.filename}`;
+      if (imageFile) imageUrl = `/uploads/${imageFile.filename}`;
+    }
+
     const newSong = {
       audioName: req.body.audioName || audioFile.originalname.replace(/\.[^/.]+$/, ""),
-      audioUrl: `${baseUrl}/uploads/${audioFile.filename}`,
-      imageUrl: imageFile ? `${baseUrl}/uploads/${imageFile.filename}` : (req.body.imageUrl || ''),
+      audioUrl: audioUrl,
+      imageUrl: imageUrl,
       categoryId: Number(categoryId)
     };
 

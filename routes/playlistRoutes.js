@@ -4,9 +4,25 @@ const playlistController = require('../controllers/playlistController');
 const { requireUserAuth } = require('../middleware/authMiddleware');
 const multer = require('multer');
 const path = require('path');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+// Configure Cloudinary (re-uses config if already set in other files, but safe to set again)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Configure multer for playlist image uploads
-const storage = multer.diskStorage({
+const storage = process.env.CLOUDINARY_CLOUD_NAME ? new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'music_app_playlists',
+    resource_type: 'image',
+    public_id: (req, file) => Date.now() + '-' + Math.round(Math.random() * 1e9),
+  }
+}) : multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
   },

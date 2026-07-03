@@ -5,13 +5,33 @@ const { requireAdminAuth } = require('../middleware/authMiddleware');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-const storage = multer.diskStorage({
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Dynamic Storage: Use Cloudinary if credentials exist, else fallback to local
+const storage = process.env.CLOUDINARY_CLOUD_NAME ? new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const isAudio = file.mimetype.startsWith('audio/');
+    return {
+      folder: 'music_app_uploads',
+      resource_type: isAudio ? 'video' : 'image', // Cloudinary uses 'video' for audio files
+      public_id: Date.now() + '-' + Math.round(Math.random() * 1e9),
+    };
+  }
+}) : multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -39,8 +59,13 @@ router.post('/login', adminController.login);
 router.get('/dashboard', requireAdminAuth, adminController.getDashboardCounts);
 router.post('/upload', requireAdminAuth, upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-  const url = `${baseUrl}/uploads/${req.file.filename}`;
+  
+  let url = req.file.path; // Cloudinary automatically puts the URL here
+  if (!process.env.CLOUDINARY_CLOUD_NAME) {
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    url = `${baseUrl}/uploads/${req.file.filename}`;
+  }
+  
   res.json({ url });
 });
 

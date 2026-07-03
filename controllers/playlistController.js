@@ -8,7 +8,14 @@ exports.createPlaylist = async (req, res, next) => {
   try {
     const { name } = req.body;
     const userId = req.userId;
-    const image = req.file ? `/uploads/${req.file.filename}` : null;
+    let image = null;
+    if (req.file) {
+      if (process.env.CLOUDINARY_CLOUD_NAME) {
+        image = req.file.path; // Cloudinary URL
+      } else {
+        image = `/uploads/${req.file.filename}`;
+      }
+    }
 
     if (!name) {
       return res.status(400).json({ status: false, message: 'Playlist name is required' });
