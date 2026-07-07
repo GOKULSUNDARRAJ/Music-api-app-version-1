@@ -250,7 +250,7 @@ class _BottomSheetPlayerState extends State<BottomSheetPlayer> {
                       overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
                       activeTrackColor: const Color(0xFFEB1C24),
                       inactiveTrackColor: const Color(0xFF1E1E1E), // Black/Dark Grey
-                      secondaryActiveTrackColor: Colors.grey.shade600, // Buffered Grey
+                      secondaryActiveTrackColor: audioService.isClipModeActive ? Colors.green : Colors.grey.shade600, // Buffered Grey or Clip Mode Green
                       thumbColor: const Color(0xFFEB1C24),
                       overlayColor: const Color(0xFFEB1C24).withValues(alpha: 0.2),
                     ),
