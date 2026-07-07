@@ -64,10 +64,10 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   
-  // Sync database in the background
-  sequelize.sync()
+  // Sync database in the background - alter:true adds new columns without dropping data
+  sequelize.sync({ alter: true })
     .then(() => {
-      console.log('Database connected and synced');
+      console.log('Database connected and synced (alter mode)');
     })
     .catch((err) => {
       console.error('Failed to sync database:', err);
