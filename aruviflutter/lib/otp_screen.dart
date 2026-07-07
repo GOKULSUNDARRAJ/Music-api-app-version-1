@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'main_activity.dart';
+import 'choose_artists_screen.dart';
 import 'sign_up_screen.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -166,7 +167,7 @@ class _OtpScreenState extends State<OtpScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(data['message'] ?? 'Verified successfully')),
           );
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainActivity()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ChooseArtistsScreen()));
         } else {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
