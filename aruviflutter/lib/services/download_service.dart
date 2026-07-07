@@ -112,8 +112,14 @@ class DownloadService extends ChangeNotifier {
   Future<void> downloadSingleSong(AudioModel song) async {
     if (song.songId == null || song.audioUrl == null || song.audioUrl!.isEmpty) return;
 
+    final isSingle = await DatabaseService().isSingleDownloaded(song.songId!);
+    if (isSingle) return; // Already single downloaded
+
     final isDownloaded = await DatabaseService().isDownloaded(song.songId!);
-    if (isDownloaded) return; // Already downloaded
+    if (isDownloaded) {
+      await DatabaseService().markAsSingleDownload(song.songId!);
+      return; 
+    }
 
     try {
       final dir = await getApplicationDocumentsDirectory();

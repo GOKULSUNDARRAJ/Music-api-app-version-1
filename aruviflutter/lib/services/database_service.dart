@@ -175,6 +175,27 @@ class DatabaseService {
     return maps.isNotEmpty;
   }
 
+  Future<bool> isSingleDownloaded(String songId) async {
+    final db = await database;
+    final maps = await db.query(
+      'downloads',
+      columns: ['songId'],
+      where: 'songId = ? AND isSingle = ?',
+      whereArgs: [songId, 1],
+    );
+    return maps.isNotEmpty;
+  }
+
+  Future<void> markAsSingleDownload(String songId) async {
+    final db = await database;
+    await db.update(
+      'downloads',
+      {'isSingle': 1},
+      where: 'songId = ?',
+      whereArgs: [songId],
+    );
+  }
+
   Future<AudioModel?> getDownload(String songId) async {
     final db = await database;
     final maps = await db.query(

@@ -28,7 +28,7 @@ class _SongOptionsSheetState extends State<SongOptionsSheet> {
   Future<void> _checkStatus() async {
     if (widget.song.songId != null) {
       final isLiked = await DatabaseService().isSongLiked(widget.song.songId!);
-      final isDownloaded = await DatabaseService().isDownloaded(widget.song.songId!);
+      final isDownloaded = await DatabaseService().isSingleDownloaded(widget.song.songId!);
       if (mounted) {
         setState(() {
           _isLiked = isLiked;
