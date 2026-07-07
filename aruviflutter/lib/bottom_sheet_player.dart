@@ -5,6 +5,8 @@ import 'models/audio_model.dart';
 import 'services/audio_service.dart';
 import 'widgets/song_options_sheet.dart';
 import 'widgets/sleep_timer_sheet.dart';
+import 'widgets/bluetooth_devices_sheet.dart';
+import 'services/bluetooth_service.dart';
 
 class BottomSheetPlayer extends StatefulWidget {
   final AudioModel currentSong;
@@ -163,6 +165,45 @@ class _BottomSheetPlayerState extends State<BottomSheetPlayer> {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                        
+                        // Bluetooth Device Chip
+                        FutureBuilder<String?>(
+                          future: BluetoothService().getConnectedDevice(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData || snapshot.data == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return GestureDetector(
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  backgroundColor: Colors.transparent,
+                                  isScrollControlled: true,
+                                  builder: (context) => const BluetoothDevicesSheet(),
+                                );
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(top: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.yellow, width: 1),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.headset, color: Colors.red, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      snapshot.data!,
+                                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

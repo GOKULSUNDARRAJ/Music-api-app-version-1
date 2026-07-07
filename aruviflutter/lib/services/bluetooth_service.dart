@@ -1,0 +1,31 @@
+import 'package:flutter/services.dart';
+
+class BluetoothService {
+  static const MethodChannel _channel = MethodChannel('com.saalai.salaimusicapp/bluetooth');
+
+  Future<String?> getConnectedDevice() async {
+    try {
+      final String? deviceName = await _channel.invokeMethod('getConnectedDevice');
+      return deviceName;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<Map<String, String>>> getPairedDevices() async {
+    try {
+      final List<dynamic> devices = await _channel.invokeMethod('getPairedDevices');
+      return devices.map((e) => Map<String, String>.from(e as Map)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> openBluetoothSettings() async {
+    try {
+      await _channel.invokeMethod('openBluetoothSettings');
+    } catch (e) {
+      // Ignore
+    }
+  }
+}
