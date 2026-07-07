@@ -27,9 +27,27 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
   Future<void> _loadPlaylists() async {
     final playlists = await DatabaseService().getCustomPlaylists();
     final addedIds = await DatabaseService().getPlaylistsContainingSong(widget.song.songId ?? '');
+    
+    // Fetch up to 4 images per playlist for the 2x2 grid
+    List<Map<String, dynamic>> mutablePlaylists = [];
+    for (var p in playlists) {
+      final pId = p['playlistId'] as String;
+      final songs = await DatabaseService().getCustomPlaylistSongs(pId);
+      final distinctImages = songs
+          .map((s) => s.imageUrl)
+          .where((url) => url != null && url.isNotEmpty)
+          .cast<String>()
+          .toSet()
+          .toList();
+      
+      final mutableP = Map<String, dynamic>.from(p);
+      mutableP['gridImages'] = distinctImages.take(4).toList();
+      mutablePlaylists.add(mutableP);
+    }
+
     if (mounted) {
       setState(() {
-        _playlists = playlists;
+        _playlists = mutablePlaylists;
         _addedPlaylistIds = addedIds;
         _isLoading = false;
       });
@@ -106,9 +124,27 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
               final img = playlist['imageUrl'] as String?;
               final name = playlist['name'] as String;
               final id = playlist['playlistId'] as String;
+              final gridImages = playlist['gridImages'] as List<String>? ?? [];
               
-              return ListTile(
-                leading: ClipRRect(
+              Widget leadingWidget;
+              if (gridImages.length >= 4) {
+                leadingWidget = SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 0,
+                      crossAxisSpacing: 0,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: gridImages.map((url) => Image.network(url, fit: BoxFit.cover)).toList(),
+                    ),
+                  ),
+                );
+              } else {
+                final img = gridImages.isNotEmpty ? gridImages.first : (playlist['imageUrl'] as String?);
+                leadingWidget = ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: img != null && img.isNotEmpty
                       ? Image.network(img, width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.music_note, color: Colors.white54, size: 30))
@@ -118,7 +154,11 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                           color: Colors.grey[800],
                           child: const Icon(Icons.music_note, color: Colors.white54),
                         ),
-                ),
+                );
+              }
+              
+              return ListTile(
+                leading: leadingWidget,
                 title: Text(name, style: const TextStyle(color: Colors.white)),
                 trailing: _addedPlaylistIds.contains(id) 
                     ? const Icon(Icons.check_circle, color: Colors.green)
