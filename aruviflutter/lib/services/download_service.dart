@@ -147,4 +147,26 @@ class DownloadService extends ChangeNotifier {
       debugPrint('Error downloading single song ${song.songId}: $e');
     }
   }
+
+  Future<void> removeSingleSong(AudioModel song) async {
+    if (song.songId == null) return;
+
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      
+      final audioFile = File('${dir.path}/song_${song.songId}.mp3');
+      if (audioFile.existsSync()) {
+        await audioFile.delete();
+      }
+
+      final imgFile = File('${dir.path}/song_${song.songId}.jpg');
+      if (imgFile.existsSync()) {
+        await imgFile.delete();
+      }
+
+      await DatabaseService().removeDownload(song.songId!);
+    } catch (e) {
+      debugPrint('Error removing single song ${song.songId}: $e');
+    }
+  }
 }

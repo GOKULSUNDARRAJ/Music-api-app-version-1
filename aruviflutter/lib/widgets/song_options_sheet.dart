@@ -18,25 +18,24 @@ class SongOptionsSheet extends StatefulWidget {
 
 class _SongOptionsSheetState extends State<SongOptionsSheet> {
   bool _isLiked = false;
-  bool _isLoadingLike = true;
+  bool _isDownloaded = false;
 
   @override
   void initState() {
     super.initState();
-    _checkLikeStatus();
+    _checkStatus();
   }
 
-  Future<void> _checkLikeStatus() async {
+  Future<void> _checkStatus() async {
     if (widget.song.songId != null) {
       final isLiked = await DatabaseService().isSongLiked(widget.song.songId!);
+      final isDownloaded = await DatabaseService().isDownloaded(widget.song.songId!);
       if (mounted) {
         setState(() {
           _isLiked = isLiked;
-          _isLoadingLike = false;
+          _isDownloaded = isDownloaded;
         });
       }
-    } else {
-      if (mounted) setState(() => _isLoadingLike = false);
     }
   }
 
@@ -157,13 +156,29 @@ class _SongOptionsSheetState extends State<SongOptionsSheet> {
                   AudioService().playSongs([widget.song], initialIndex: 0, playlistName: widget.song.categoryName ?? 'Song');
                 }),
                 _buildOptionTile(Icons.queue_music, 'Add to Playlist', () => _showAddToPlaylist(context)),
-                _buildOptionTile(Icons.download_outlined, 'Download', () {
-                  Navigator.pop(context);
-                  DownloadService().downloadSingleSong(widget.song);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Downloading...'), backgroundColor: Colors.green),
-                  );
-                }),
+                _buildOptionTile(
+                  _isDownloaded ? Icons.download_done : Icons.download_outlined,
+                  _isDownloaded ? 'Remove from download' : 'Download',
+                  () async {
+                    Navigator.pop(context);
+                    if (_isDownloaded) {
+                      await DownloadService().removeSingleSong(widget.song);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Removed from downloads'), backgroundColor: Colors.red),
+                        );
+                      }
+                    } else {
+                      await DownloadService().downloadSingleSong(widget.song);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Downloading...'), backgroundColor: Colors.green),
+                        );
+                      }
+                    }
+                  },
+                  iconColor: _isDownloaded ? Colors.green : Colors.white,
+                ),
                 _buildOptionTile(Icons.reply, 'Share', () {
                   Navigator.pop(context);
                 }),
