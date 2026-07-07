@@ -139,24 +139,12 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   Future<void> _fetchLikeStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('access_token') ?? '';
-      final authHeader = token.startsWith('Bearer ') ? token : 'Bearer $token';
-
-      final response = await http.get(
-        Uri.parse('https://music-app-api-1.onrender.com/api/category/status/${widget.categoryId}'),
-        headers: {'Authorization': authHeader},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _isLiked = data['isLiked'] ?? false;
-            _isLoadingLike = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoadingLike = false);
+      final likedList = prefs.getStringList('local_liked_playlists') ?? [];
+      if (mounted) {
+        setState(() {
+          _isLiked = likedList.contains(widget.categoryId);
+          _isLoadingLike = false;
+        });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingLike = false);
@@ -251,22 +239,19 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('access_token') ?? '';
-      final authHeader = token.startsWith('Bearer ') ? token : 'Bearer $token';
-
-      await http.post(
-        Uri.parse('https://music-app-api-1.onrender.com/api/category/toggle'),
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json'
-        },
-        body: json.encode({"categoryId": widget.categoryId}),
-      );
-      // Fire and forget
+      final likedList = prefs.getStringList('local_liked_playlists') ?? [];
+      
+      if (_isLiked) {
+        if (!likedList.contains(widget.categoryId)) {
+          likedList.add(widget.categoryId);
+        }
+      } else {
+        likedList.remove(widget.categoryId);
+      }
+      
+      await prefs.setStringList('local_liked_playlists', likedList);
     } catch (e) {
-      debugPrint('Failed to toggle like: $e');
-      // Revert on fail
-      // Revert on fail
+      debugPrint('Failed to toggle like locally: $e');
       if (mounted) {
         setState(() {
           _isLiked = !_isLiked;
@@ -307,7 +292,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
 
   Widget _buildIconButton(IconData icon, VoidCallback onTap) {
     return Container(
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: 8),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white70, width: 1),
@@ -616,7 +601,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                           onPressed: _isLoadingLike ? null : _toggleLike,
                         ),
                       ],
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 4),
                       // Big Red Play Button in row — fades out when floating one appears
                       AnimatedOpacity(
                         opacity: _showFloatingPlayButton ? 0.0 : 1.0,
