@@ -4,7 +4,6 @@ import '../services/audio_service.dart';
 import '../services/download_service.dart';
 import '../services/database_service.dart';
 import 'add_to_playlist_sheet.dart';
-import '../aruvi_code_generator_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class SongOptionsSheet extends StatefulWidget {
@@ -51,21 +50,6 @@ class _SongOptionsSheetState extends State<SongOptionsSheet> {
     } else {
       await DatabaseService().unlikeSong(widget.song.songId!);
     }
-  }
-
-  void _showAriviCode(BuildContext context) {
-    Navigator.pop(context); // Close this sheet
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      builder: (context) => AruviCodeGeneratorSheet(
-        categoryId: widget.song.songId ?? 'unknown',
-        title: widget.song.audioName ?? 'Unknown Song',
-        imageUrl: widget.song.imageUrl ?? '',
-      ),
-    );
   }
 
   void _showAddToPlaylist(BuildContext context) {
@@ -179,14 +163,6 @@ class _SongOptionsSheetState extends State<SongOptionsSheet> {
                   },
                   iconColor: _isDownloaded ? Colors.green : Colors.white,
                 ),
-                _buildOptionTile(Icons.reply, 'Share', () {
-                  Navigator.pop(context);
-                }),
-                _buildOptionTile(Icons.playlist_add, 'Add to Queue', () {
-                  Navigator.pop(context);
-                  // TODO: Implement Queue logic in AudioService
-                }),
-                _buildOptionTile(Icons.graphic_eq, 'Show Arivi Code', () => _showAriviCode(context)),
               ],
             ),
           ),
