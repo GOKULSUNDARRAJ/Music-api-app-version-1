@@ -118,6 +118,7 @@ class _RecentlyPlayedPlaylistsScreenState extends State<RecentlyPlayedPlaylistsS
                               imageUrl: playlist.categoryImage ?? '',
                               categoryId: playlist.categoryId?.toString() ?? '',
                               songs: playlist.songs,
+                              isArtist: playlist.adapterType == 2,
                             ),
                           ),
                         ).then((_) => _loadPlaylists());

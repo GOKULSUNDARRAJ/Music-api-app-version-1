@@ -22,6 +22,7 @@ class PlaylistScreen extends StatefulWidget {
   final String categoryId;
   final List<AudioModel> songs;
   final bool isLocal;
+  final bool isArtist;
 
   const PlaylistScreen({
     super.key,
@@ -31,6 +32,7 @@ class PlaylistScreen extends StatefulWidget {
     required this.categoryId,
     required this.songs,
     this.isLocal = false,
+    this.isArtist = false,
   });
 
   @override
@@ -208,6 +210,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
         categoryName: widget.title,
         categoryImage: widget.imageUrl,
         songs: widget.songs,
+        adapterType: (widget.isArtist || widget.subtitle.toLowerCase() == 'artist') ? 2 : 1,
       );
 
       final cachedListJson = prefs.getString('offline_recent_playlists');
@@ -258,6 +261,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
           categoryName: widget.title,
           categoryImage: widget.imageUrl,
           songs: widget.songs,
+          adapterType: (widget.isArtist || widget.subtitle.toLowerCase() == 'artist') ? 2 : 1,
         );
         likedListStr.add(json.encode(category.toJson()));
       }
@@ -297,6 +301,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
           categoryName: widget.title,
           categoryImage: widget.imageUrl,
           songs: widget.songs,
+          adapterType: (widget.isArtist || widget.subtitle.toLowerCase() == 'artist') ? 2 : 1,
         );
         addedListStr.add(json.encode(category.toJson()));
       }
@@ -587,7 +592,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                       ),
 
                       _buildIconButton(Icons.reply, () {}),
-                      if (!widget.isLocal && widget.subtitle.toLowerCase() != 'artist') ...[
+                      if (!widget.isLocal && widget.subtitle.toLowerCase() != 'artist' && !widget.isArtist) ...[
                         _buildIconButton(
                           _isLoadingPlaylistStatus ? Icons.add : (_isAddedToPlaylist ? Icons.check : Icons.add),
                           _isLoadingPlaylistStatus ? () {} : _togglePlaylist,
@@ -614,7 +619,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                       ),
                       const Spacer(),
                       if (!widget.isLocal) ...[
-                        if (widget.subtitle.toLowerCase() == 'artist')
+                        if (widget.subtitle.toLowerCase() == 'artist' || widget.isArtist)
                           GestureDetector(
                             onTap: _isLoadingLike ? null : _toggleLike,
                             child: Container(

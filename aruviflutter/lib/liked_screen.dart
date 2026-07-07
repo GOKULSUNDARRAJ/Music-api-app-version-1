@@ -63,6 +63,7 @@ class _LikedScreenState extends State<LikedScreen> {
               title: category.categoryName ?? '',
               subtitle: '',
               songs: category.songs,
+              isArtist: category.adapterType == 2,
             ),
           ),
         );

@@ -110,6 +110,7 @@ class _HomeArtistTabState extends State<HomeArtistTab> {
               imageUrl: category.categoryImage ?? '',
               categoryId: category.categoryId?.toString() ?? '',
               songs: category.songs,
+              isArtist: true,
             ),
           ),
         );
@@ -192,6 +193,7 @@ class _HomeArtistTabState extends State<HomeArtistTab> {
               imageUrl: category.categoryImage ?? '',
               categoryId: category.categoryId?.toString() ?? '',
               songs: category.songs,
+              isArtist: true,
             ),
           ),
         );
@@ -248,6 +250,7 @@ class _HomeArtistTabState extends State<HomeArtistTab> {
               imageUrl: category.categoryImage ?? '',
               categoryId: category.categoryId?.toString() ?? '',
               songs: category.songs,
+              isArtist: true,
             ),
           ),
         );
