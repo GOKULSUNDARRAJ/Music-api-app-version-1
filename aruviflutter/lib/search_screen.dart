@@ -188,7 +188,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildSongTile(AudioModel song, int index) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: SizedBox(
@@ -277,7 +277,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildPlaylistTile(ArtistCategory playlist) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: SizedBox(
