@@ -137,10 +137,11 @@ exports.getCategorySongs = async (req, res, next) => {
       songId: formatEntityId('song', song.id),
       audioName: song.audioName,
       audioUrl: song.audioUrl,
-      category: category.categoryName,
+      categoryName: category.categoryName,
       imageUrl: song.imageUrl,
       categoryId: formatEntityId('cat', song.categoryId),
-      isLiked: userLikedSongs.has(song.id)
+      isLiked: userLikedSongs.has(song.id),
+      lyrics: song.lyrics || null
     }));
 
     return res.status(200).json({

@@ -182,10 +182,52 @@ class AudioService extends ChangeNotifier {
           // Set source but don't play, preserving the last known position
           await _player.setAudioSource(audioSource, initialIndex: _currentIndex, initialPosition: Duration(seconds: savedPositionSeconds));
           notifyListeners();
+
+          // Fetch fresh lyrics for the current song in the background
+          _refreshCurrentSongLyrics();
         }
       }
     } catch (e) {
       debugPrint('Error restoring audio state: $e');
+    }
+  }
+
+  /// Fetches fresh lyrics for the current song from the server and updates the playlist in memory
+  Future<void> _refreshCurrentSongLyrics() async {
+    try {
+      if (_currentIndex < 0 || _currentIndex >= _playlist.length) return;
+      final song = _playlist[_currentIndex];
+      if (song.categoryId == null || song.categoryId!.isEmpty) return;
+
+      // categoryId is like "cat_027", extract the numeric part
+      final categoryNumericId = song.categoryId!.replaceAll(RegExp(r'[^0-9]'), '');
+      if (categoryNumericId.isEmpty) return;
+
+      final freshSongs = await DatabaseService().getCategorySongs(categoryNumericId);
+      // Find matching song by songId and grab lyrics
+      for (final fresh in freshSongs) {
+        if (fresh.songId == song.songId && fresh.lyrics != null) {
+          _playlist[_currentIndex] = AudioModel(
+            songId: song.songId,
+            audioName: song.audioName,
+            audioUrl: song.audioUrl,
+            categoryName: song.categoryName,
+            categoryId: song.categoryId,
+            imageUrl: song.imageUrl,
+            downloadPath: song.downloadPath,
+            isDownloaded: song.isDownloaded,
+            fileSize: song.fileSize,
+            duration: song.duration,
+            durationInMillis: song.durationInMillis,
+            playlistId: song.playlistId,
+            lyrics: fresh.lyrics,
+          );
+          notifyListeners();
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error refreshing lyrics: $e');
     }
   }
 
