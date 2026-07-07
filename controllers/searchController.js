@@ -5,16 +5,23 @@ const formatEntityId = (prefix, value) => `${prefix}_${String(value).padStart(3,
 
 exports.search = async (req, res, next) => {
   try {
-    const { q } = req.query;
+    const { q, page = 1, limit = 20 } = req.query;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
 
     if (!q) {
       return res.status(200).json({
         status: true,
-        songs: []
+        songs: [],
+        playlists: [],
+        currentPage: pageNum,
+        hasMore: false
       });
     }
 
-    const songs = await Song.findAll({
+    // 1. Search Songs
+    const { count: songCount, rows: songs } = await Song.findAndCountAll({
       where: {
         audioName: {
           [Op.substring]: q
@@ -32,7 +39,8 @@ exports.search = async (req, res, next) => {
           ]
         }
       ],
-      limit: 20
+      limit: limitNum,
+      offset: offset
     });
 
     let userLikedSongs = new Set();
@@ -41,7 +49,7 @@ exports.search = async (req, res, next) => {
       likes.forEach(l => userLikedSongs.add(l.songId));
     }
 
-    const results = songs.map((song) => ({
+    const songResults = songs.map((song) => ({
       songId: formatEntityId('song', song.id),
       audioName: song.audioName,
       audioUrl: song.audioUrl,
@@ -52,12 +60,48 @@ exports.search = async (req, res, next) => {
       isLiked: userLikedSongs.has(song.id)
     }));
 
+    // 2. Search Playlists (Categories)
+    const { count: playlistCount, rows: playlists } = await Category.findAndCountAll({
+      where: {
+        categoryName: {
+          [Op.substring]: q
+        }
+      },
+      include: [
+        {
+          model: Song,
+          as: 'songs'
+        }
+      ],
+      limit: limitNum,
+      offset: offset
+    });
+
+    const playlistResults = playlists.map((playlist) => ({
+      categoryId: formatEntityId('cat', playlist.id),
+      categoryName: playlist.categoryName,
+      categoryImage: playlist.categoryImage,
+      songs: (playlist.songs || []).map(song => ({
+        songId: formatEntityId('song', song.id),
+        audioName: song.audioName,
+        audioUrl: song.audioUrl,
+        category: playlist.categoryName,
+        imageUrl: song.imageUrl,
+        categoryId: formatEntityId('cat', song.categoryId),
+        isLiked: userLikedSongs.has(song.id)
+      }))
+    }));
+
+    const hasMore = (offset + limitNum) < Math.max(songCount, playlistCount);
 
     return res.status(200).json({
       status: true,
       error_type: '200',
       message: 'Search Results',
-      songs: results
+      songs: songResults,
+      playlists: playlistResults,
+      currentPage: pageNum,
+      hasMore: hasMore
     });
   } catch (error) {
     return next(error);

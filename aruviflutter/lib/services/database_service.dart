@@ -498,4 +498,45 @@ class DatabaseService {
       return AudioModel.fromJson(jsonDecode(jsonStr));
     }).toList();
   }
+
+  // --- Search API ---
+  Future<Map<String, dynamic>> searchApi(String query, {int page = 1, int limit = 20}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final url = Uri.parse('https://music-app-api-1.onrender.com/api/search?q=$query&page=$page&limit=$limit');
+      
+      final headers = {
+        'Content-Type': 'application/json',
+      };
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true) {
+          final List<AudioModel> songs = (data['songs'] as List?)
+                  ?.map((s) => AudioModel.fromJson(s))
+                  .toList() ??
+              [];
+          final List<ArtistCategory> playlists = (data['playlists'] as List?)
+                  ?.map((p) => ArtistCategory.fromJson(p))
+                  .toList() ??
+              [];
+          return {
+            'songs': songs,
+            'playlists': playlists,
+            'hasMore': data['hasMore'] ?? false,
+          };
+        }
+      }
+      return {'songs': <AudioModel>[], 'playlists': <ArtistCategory>[], 'hasMore': false};
+    } catch (e) {
+      print('Error searching API: $e');
+      return {'songs': <AudioModel>[], 'playlists': <ArtistCategory>[], 'hasMore': false};
+    }
+  }
 }
