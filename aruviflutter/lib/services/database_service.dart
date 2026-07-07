@@ -25,7 +25,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -58,6 +58,16 @@ class DatabaseService {
           songId TEXT UNIQUE,
           audioModelJson TEXT,
           playedAt INTEGER
+        )
+      ''');
+    }
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE liked_songs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          songId TEXT UNIQUE,
+          audioModelJson TEXT,
+          likedAt INTEGER
         )
       ''');
     }
@@ -102,6 +112,14 @@ class DatabaseService {
         songId TEXT UNIQUE,
         audioModelJson TEXT,
         playedAt INTEGER
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE liked_songs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        songId TEXT UNIQUE,
+        audioModelJson TEXT,
+        likedAt INTEGER
       )
     ''');
   }
@@ -344,5 +362,53 @@ class DatabaseService {
     } catch (e) {
       print('Failed to sync recently played: $e');
     }
+  }
+
+  // --- LIKED SONGS ---
+
+  Future<void> likeSong(AudioModel song) async {
+    if (song.songId == null) return;
+    final db = await database;
+    await db.insert(
+      'liked_songs',
+      {
+        'songId': song.songId,
+        'audioModelJson': jsonEncode(song.toJson()),
+        'likedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> unlikeSong(String songId) async {
+    final db = await database;
+    await db.delete(
+      'liked_songs',
+      where: 'songId = ?',
+      whereArgs: [songId],
+    );
+  }
+
+  Future<bool> isSongLiked(String songId) async {
+    final db = await database;
+    final maps = await db.query(
+      'liked_songs',
+      columns: ['songId'],
+      where: 'songId = ?',
+      whereArgs: [songId],
+    );
+    return maps.isNotEmpty;
+  }
+
+  Future<List<AudioModel>> getLikedSongs() async {
+    final db = await database;
+    final maps = await db.query(
+      'liked_songs',
+      orderBy: 'likedAt DESC',
+    );
+    return maps.map((data) {
+      final jsonStr = data['audioModelJson'] as String;
+      return AudioModel.fromJson(jsonDecode(jsonStr));
+    }).toList();
   }
 }
