@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api, { setAuthToken } from './api';
 
-const TABS = ['Dashboard', 'Sections', 'Categories', 'Songs', 'Bulk Songs', 'Menu', 'Users'];
+const TABS = ['Dashboard', 'Sections', 'Categories', 'Songs', 'Bulk Songs', 'Lyrics', 'Menu', 'Users'];
 const formatEntityId = (prefix, id) => `${prefix}_${String(id).padStart(3, '0')}`;
 const CONTENT_TYPES = [
   { value: '', label: 'All' },
@@ -82,6 +82,7 @@ function App() {
               {tab === 'Categories' && '📂'}
               {tab === 'Songs' && '🎵'}
               {tab === 'Bulk Songs' && '🚀'}
+              {tab === 'Lyrics' && '🎤'}
               {tab === 'Menu' && '🍔'}
               {tab === 'Users' && '👥'}
             </span>
@@ -119,6 +120,7 @@ function App() {
         {activeTab === 'Categories' && <Categories onDataChange={onDataChange} contentType={contentType} />}
         {activeTab === 'Songs' && <Songs onDataChange={onDataChange} contentType={contentType} initialEditSong={songToEdit} clearEditSong={() => setSongToEdit(null)} />}
         {activeTab === 'Bulk Songs' && <BulkSongs onDataChange={onDataChange} contentType={contentType} onEditRequest={(s) => { setSongToEdit(s); setActiveTab('Songs'); }} />}
+        {activeTab === 'Lyrics' && <LyricsManager onDataChange={onDataChange} />}
         {activeTab === 'Menu' && <MenuManager onDataChange={onDataChange} />}
         {activeTab === 'Users' && <Users onDataChange={onDataChange} />}
 
@@ -1179,6 +1181,203 @@ function Users({ onDataChange }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function LyricsManager() {
+  const [songs, setSongs] = useState([]);
+  const [selectedSong, setSelectedSong] = useState(null);
+  const [lyrics, setLyrics] = useState('');
+  const [search, setSearch] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Load all songs
+  const loadSongs = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/admin/songs');
+      setSongs(data || []);
+    } catch (err) {
+      alert('Failed to load songs');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadSongs(); }, []);
+
+  const filteredSongs = songs.filter(s =>
+    s.audioName?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectSong = (song) => {
+    setSelectedSong(song);
+    setLyrics(song.lyrics || '');
+    setSaved(false);
+  };
+
+  const saveLyrics = async () => {
+    if (!selectedSong) return;
+    setSaving(true);
+    setSaved(false);
+    try {
+      await api.put(`/admin/song/${selectedSong.id}/lyrics`, { lyrics });
+      setSaved(true);
+      // Update local list
+      setSongs(prev => prev.map(s => s.id === selectedSong.id ? { ...s, lyrics } : s));
+      setSelectedSong(prev => ({ ...prev, lyrics }));
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      alert('Failed to save lyrics');
+    }
+    setSaving(false);
+  };
+
+  const clearLyrics = async () => {
+    if (!selectedSong || !window.confirm('Remove lyrics for this song?')) return;
+    await api.put(`/admin/song/${selectedSong.id}/lyrics`, { lyrics: '' });
+    setLyrics('');
+    setSongs(prev => prev.map(s => s.id === selectedSong.id ? { ...s, lyrics: null } : s));
+    setSelectedSong(prev => ({ ...prev, lyrics: null }));
+  };
+
+  const lineCount = lyrics.trim().split('\n').filter(l => l.trim()).length;
+
+  return (
+    <div style={{ display: 'flex', gap: '24px', height: 'calc(100vh - 140px)' }}>
+
+      {/* Left Panel: Song List */}
+      <div style={{ width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <h2 style={{ margin: 0 }}>🎤 Lyrics Manager</h2>
+        <input
+          placeholder="🔍 Search songs..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #333', background: '#1a1a2e', color: '#fff', fontSize: '14px' }}
+        />
+        <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {loading && <p className="muted">Loading songs...</p>}
+          {filteredSongs.map(song => (
+            <div
+              key={song.id}
+              onClick={() => selectSong(song)}
+              style={{
+                padding: '10px 14px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: selectedSong?.id === song.id ? '#2d1b69' : '#1a1a2e',
+                border: selectedSong?.id === song.id ? '1px solid #7c3aed' : '1px solid #2a2a4a',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                transition: 'all 0.15s'
+              }}
+            >
+              {song.imageUrl && (
+                <img src={song.imageUrl} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {song.audioName}
+                </div>
+                <div style={{ fontSize: '11px', color: song.lyrics ? '#a78bfa' : '#666', marginTop: 2 }}>
+                  {song.lyrics ? '✓ Has lyrics' : 'No lyrics yet'}
+                </div>
+              </div>
+            </div>
+          ))}
+          {!loading && filteredSongs.length === 0 && (
+            <p className="muted">No songs found</p>
+          )}
+        </div>
+      </div>
+
+      {/* Right Panel: Lyrics Editor */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {!selectedSong ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, flexDirection: 'column', gap: '12px', opacity: 0.4 }}>
+            <span style={{ fontSize: '48px' }}>🎵</span>
+            <p>Select a song from the left to edit its lyrics</p>
+          </div>
+        ) : (
+          <>
+            {/* Song Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: '#1a1a2e', borderRadius: '10px', border: '1px solid #2a2a4a' }}>
+              {selectedSong.imageUrl && (
+                <img src={selectedSong.imageUrl} alt="" style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover' }} />
+              )}
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '16px', color: '#fff' }}>{selectedSong.audioName}</div>
+                <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
+                  ID: {formatEntityId('song', selectedSong.id)} &nbsp;·&nbsp; {lineCount} lines
+                </div>
+              </div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                {selectedSong.lyrics && (
+                  <button onClick={clearLyrics} style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: '13px' }}>
+                    🗑 Clear
+                  </button>
+                )}
+                <button
+                  onClick={saveLyrics}
+                  disabled={saving}
+                  style={{ background: saved ? '#16a34a' : '#7c3aed', border: 'none', color: '#fff', borderRadius: 6, padding: '6px 20px', cursor: 'pointer', fontWeight: 600, fontSize: '13px', transition: 'background 0.2s' }}
+                >
+                  {saving ? 'Saving...' : saved ? '✓ Saved!' : '💾 Save Lyrics'}
+                </button>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div style={{ padding: '10px 14px', background: '#0d1117', borderRadius: '8px', border: '1px solid #1e3a5f', fontSize: '12px', color: '#6b9ac7' }}>
+              💡 Enter each lyric line on a new line. The app will auto-highlight each line as the song plays.
+              Use blank lines to add spacing between verses.
+            </div>
+
+            {/* Lyrics Textarea */}
+            <textarea
+              value={lyrics}
+              onChange={e => { setLyrics(e.target.value); setSaved(false); }}
+              placeholder={"Enter lyrics here...\n\nExample:\nIdhazhin oru oram sirithaai anbae\nNijamaai ithu pothum sirippaai anbae\n\nSollu nee i love you\nNee thaan en kurinji poo"}
+              style={{
+                flex: 1,
+                padding: '16px',
+                borderRadius: '10px',
+                border: '1px solid #2a2a4a',
+                background: '#0d1117',
+                color: '#e2e8f0',
+                fontSize: '15px',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                resize: 'none',
+                outline: 'none'
+              }}
+              onFocus={e => e.target.style.borderColor = '#7c3aed'}
+              onBlur={e => e.target.style.borderColor = '#2a2a4a'}
+            />
+
+            {/* Live Preview */}
+            {lyrics.trim() && (
+              <div style={{ maxHeight: '160px', overflowY: 'auto', padding: '12px 16px', background: '#0d1117', borderRadius: '8px', border: '1px solid #2a2a4a' }}>
+                <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px', fontWeight: 600, letterSpacing: '1px' }}>PREVIEW (as seen in app)</div>
+                {lyrics.split('\n').map((line, i) => (
+                  <div key={i} style={{
+                    fontSize: i === 2 ? '15px' : '13px',
+                    color: i === 2 ? '#a78bfa' : line.trim() ? '#888' : 'transparent',
+                    fontWeight: i === 2 ? 700 : 400,
+                    lineHeight: '1.8',
+                    marginBottom: line.trim() ? 0 : '4px'
+                  }}>
+                    {line || '\u00a0'}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
