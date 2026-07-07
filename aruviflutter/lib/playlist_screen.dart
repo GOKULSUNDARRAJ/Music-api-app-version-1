@@ -581,20 +581,10 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
 
                       _buildIconButton(Icons.reply, () {}),
                       if (!widget.isLocal) ...[
-                        if (!_isLoadingPlaylistStatus)
-                          _buildIconButton(
-                            _isAddedToPlaylist ? Icons.check : Icons.add,
-                            _togglePlaylist,
-                          )
-                        else
-                          const Padding(
-                            padding: EdgeInsets.only(right: 12.0),
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            ),
-                          ),
+                        _buildIconButton(
+                          _isLoadingPlaylistStatus ? Icons.add : (_isAddedToPlaylist ? Icons.check : Icons.add),
+                          _isLoadingPlaylistStatus ? () {} : _togglePlaylist,
+                        ),
                       ],
                       const SizedBox(width: 5),
                       IconButton(
@@ -617,24 +607,14 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                       ),
                       const Spacer(),
                       if (!widget.isLocal) ...[
-                        if (!_isLoadingLike)
-                          IconButton(
-                            icon: Icon(
-                              _isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: _isLiked ? const Color(0xFFEB1C24) : Colors.white,
-                              size: 28,
-                            ),
-                            onPressed: _toggleLike,
-                          )
-                        else
-                          const Padding(
-                            padding: EdgeInsets.all(12.0),
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            ),
+                        IconButton(
+                          icon: Icon(
+                            _isLoadingLike ? Icons.favorite_border : (_isLiked ? Icons.favorite : Icons.favorite_border),
+                            color: _isLoadingLike ? Colors.white54 : (_isLiked ? const Color(0xFFEB1C24) : Colors.white),
+                            size: 28,
                           ),
+                          onPressed: _isLoadingLike ? null : _toggleLike,
+                        ),
                       ],
                       const SizedBox(width: 12),
                       // Big Red Play Button in row — fades out when floating one appears
