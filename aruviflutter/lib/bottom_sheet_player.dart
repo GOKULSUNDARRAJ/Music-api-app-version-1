@@ -62,11 +62,10 @@ class _BottomSheetPlayerState extends State<BottomSheetPlayer> {
           if (sliderVal > 1.0) sliderVal = 1.0;
         }
 
-        // Generate a background gradient that matches Android behavior
         final backgroundGradient = LinearGradient(
           colors: [
-            _dominantColor,
-            _dominantColor.withOpacity(0.5),
+            _dominantColor.withValues(alpha: 1.0),
+            Color.lerp(_dominantColor, const Color(0xFF121212), 0.5)!.withValues(alpha: 1.0),
             const Color(0xFF121212), // Dark grey / almost black
           ],
           begin: Alignment.topCenter,
@@ -241,7 +240,7 @@ class _BottomSheetPlayerState extends State<BottomSheetPlayer> {
                       activeTrackColor: const Color(0xFFEB1C24),
                       inactiveTrackColor: Colors.grey.shade800,
                       thumbColor: const Color(0xFFEB1C24),
-                      overlayColor: const Color(0xFFEB1C24).withOpacity(0.2),
+                      overlayColor: const Color(0xFFEB1C24).withValues(alpha: 0.2),
                     ),
                     child: Slider(
                       value: sliderVal,
