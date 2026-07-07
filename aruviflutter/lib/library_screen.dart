@@ -13,6 +13,7 @@ import 'playlist_screen.dart';
 import 'recently_played_playlists_screen.dart';
 import 'models/artist_category.dart';
 import 'services/audio_service.dart';
+import 'settings_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -220,7 +221,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
           _buildListItem(Icons.auto_awesome, 'Recently Played', () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const RecentlyPlayedPlaylistsScreen())).then((_) => _loadArtists());
           }),
-          _buildListItem(Icons.headset_mic_outlined, 'Settings', () {}),
+          _buildListItem(Icons.headset_mic_outlined, 'Settings', () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          }),
           
           if (_followedArtists.isNotEmpty) ...[
             const Padding(

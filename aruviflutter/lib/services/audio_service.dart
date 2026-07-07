@@ -36,12 +36,27 @@ class AudioService extends ChangeNotifier {
   // Clip Mode State
   bool _isClipModeActive = false;
   Duration _clipStartPosition = Duration.zero;
-  final Duration _clipDuration = const Duration(seconds: 30);
+  Duration _clipDuration = const Duration(seconds: 30);
   bool get isClipModeActive => _isClipModeActive;
   Duration get clipStartPosition => _clipStartPosition;
   Duration get clipDuration => _clipDuration;
 
+  Future<void> setClipDuration(Duration duration) async {
+    _clipDuration = duration;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('clip_duration_seconds', duration.inSeconds);
+  }
+
   void _init() {
+    SharedPreferences.getInstance().then((prefs) {
+      final savedClipDuration = prefs.getInt('clip_duration_seconds');
+      if (savedClipDuration != null) {
+        _clipDuration = Duration(seconds: savedClipDuration);
+        notifyListeners();
+      }
+    });
+
     _player.playerStateStream.listen((state) {
       notifyListeners();
     });
