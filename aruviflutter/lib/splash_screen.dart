@@ -79,40 +79,6 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black, // Match home screen background
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        toolbarHeight: 60,
-        titleSpacing: 0,
-        automaticallyImplyLeading: false,
-        title: Container(
-          width: 150, 
-          height: 40,
-          margin: const EdgeInsets.only(left: 16),
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/arivumusiclogo.png'),
-              fit: BoxFit.contain,
-              alignment: Alignment.centerLeft,
-            ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-            onPressed: () {}, // Disabled on splash screen
-          ),
-          Container(
-            width: 32,
-            height: 32,
-            margin: const EdgeInsets.only(right: 15, left: 10),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-            ),
-            child: Image.asset('assets/images/profilemusic.png', fit: BoxFit.contain),
-          ),
-        ],
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
