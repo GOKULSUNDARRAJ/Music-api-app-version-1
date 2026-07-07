@@ -31,13 +31,27 @@ class AudioService extends ChangeNotifier {
       notifyListeners();
     });
     
+    int lastSavedPositionInSeconds = 0;
+
     _player.positionStream.listen((pos) {
+      final seconds = pos.inSeconds;
+      // Save position every 5 seconds to avoid spamming SharedPreferences
+      if ((seconds - lastSavedPositionInSeconds).abs() >= 5) {
+        lastSavedPositionInSeconds = seconds;
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setInt('last_position', seconds);
+        });
+      }
       notifyListeners();
     });
 
     _player.currentIndexStream.listen((index) {
       if (index != null && index != _currentIndex) {
         _currentIndex = index;
+        lastSavedPositionInSeconds = 0; // Reset saved position for new song
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setInt('last_position', 0);
+        });
         _saveState();
         notifyListeners();
       }
@@ -68,6 +82,7 @@ class AudioService extends ChangeNotifier {
       final savedPlaylist = prefs.getString('last_playlist');
       final savedIndex = prefs.getInt('last_index') ?? 0;
       final savedName = prefs.getString('last_playlist_name');
+      final savedPositionSeconds = prefs.getInt('last_position') ?? 0;
       
       if (savedPlaylist != null && savedPlaylist.isNotEmpty) {
         final List<dynamic> parsed = json.decode(savedPlaylist);
@@ -97,8 +112,8 @@ class AudioService extends ChangeNotifier {
             }
           }
           final audioSource = ConcatenatingAudioSource(children: audioSources);
-          // Set source but don't play
-          await _player.setAudioSource(audioSource, initialIndex: _currentIndex, initialPosition: Duration.zero);
+          // Set source but don't play, preserving the last known position
+          await _player.setAudioSource(audioSource, initialIndex: _currentIndex, initialPosition: Duration(seconds: savedPositionSeconds));
           notifyListeners();
         }
       }
@@ -152,11 +167,15 @@ class AudioService extends ChangeNotifier {
 
   Future<void> pause() async {
     await _player.pause();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_position', _player.position.inSeconds);
   }
   
   Future<void> togglePlayPause() async {
     if (_player.playing) {
       await _player.pause();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('last_position', _player.position.inSeconds);
     } else {
       await _player.play();
     }
