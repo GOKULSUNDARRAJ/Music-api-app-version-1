@@ -161,24 +161,19 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   Future<void> _checkPlaylistStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('access_token') ?? '';
-      final authHeader = token.startsWith('Bearer ') ? token : 'Bearer $token';
-
-      final response = await http.get(
-        Uri.parse('https://music-app-api-1.onrender.com/api/playlist/status/${widget.categoryId}'),
-        headers: {'Authorization': authHeader},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _isAddedToPlaylist = data['isInPlaylist'] ?? false;
-            _isLoadingPlaylistStatus = false;
+      final addedListStr = prefs.getStringList('local_added_playlists_data') ?? [];
+      if (mounted) {
+        setState(() {
+          _isAddedToPlaylist = addedListStr.any((item) {
+            try {
+              final decoded = json.decode(item);
+              return decoded['categoryId'] == widget.categoryId;
+            } catch (e) {
+              return false;
+            }
           });
-        }
-      } else {
-        if (mounted) setState(() => _isLoadingPlaylistStatus = false);
+          _isLoadingPlaylistStatus = false;
+        });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingPlaylistStatus = false);
@@ -285,21 +280,30 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('access_token') ?? '';
-      final authHeader = token.startsWith('Bearer ') ? token : 'Bearer $token';
+      final addedListStr = prefs.getStringList('local_added_playlists_data') ?? [];
+      
+      addedListStr.removeWhere((item) {
+        try {
+          final decoded = json.decode(item);
+          return decoded['categoryId'] == widget.categoryId;
+        } catch (e) {
+          return false;
+        }
+      });
 
-      await http.post(
-        Uri.parse('https://music-app-api-1.onrender.com/api/AddToMyPlayList'),
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json'
-        },
-        body: json.encode({"categoryId": widget.categoryId}),
-      );
-      // Fire and forget
+      if (_isAddedToPlaylist) {
+        final category = ArtistCategory(
+          categoryId: widget.categoryId,
+          categoryName: widget.title,
+          categoryImage: widget.imageUrl,
+          songs: widget.songs,
+        );
+        addedListStr.add(json.encode(category.toJson()));
+      }
+      
+      await prefs.setStringList('local_added_playlists_data', addedListStr);
     } catch (e) {
-      debugPrint('Failed to toggle playlist status: $e');
-      // Revert on fail
+      debugPrint('Failed to toggle playlist status locally: $e');
       if (mounted) {
         setState(() {
           _isAddedToPlaylist = !_isAddedToPlaylist;

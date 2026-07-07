@@ -27,33 +27,26 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
   Future<void> _fetchPlaylistItems() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('access_token') ?? '';
-      final authHeader = token.startsWith('Bearer ') ? token : 'Bearer $token';
-
-      final response = await http.get(
-        Uri.parse('https://music-app-api-1.onrender.com/api/playlist/my'),
-        headers: {'Authorization': authHeader},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['sections'] != null && (data['sections'] as List).isNotEmpty) {
-          final sectionData = data['sections'][0];
-          final section = PlaylistSection.fromJson(sectionData);
-          if (mounted) {
-            setState(() {
-              _playlistItems = section.categories ?? [];
-              _isLoading = false;
-            });
-          }
-        } else {
-          if (mounted) setState(() => _isLoading = false);
+      final addedListStr = prefs.getStringList('local_added_playlists_data') ?? [];
+      
+      final List<ArtistCategory> loadedItems = [];
+      for (var item in addedListStr) {
+        try {
+          final decoded = json.decode(item);
+          loadedItems.add(ArtistCategory.fromJson(decoded));
+        } catch (e) {
+          debugPrint('Error parsing added playlist: $e');
         }
-      } else {
-        if (mounted) setState(() => _isLoading = false);
+      }
+
+      if (mounted) {
+        setState(() {
+          _playlistItems = loadedItems.reversed.toList(); // Newest first
+          _isLoading = false;
+        });
       }
     } catch (e) {
-      debugPrint('Failed to load playlist items: $e');
+      debugPrint('Failed to load local playlist items: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
