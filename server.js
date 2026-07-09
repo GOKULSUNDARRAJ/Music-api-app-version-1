@@ -40,15 +40,17 @@ app.use('/api/admin', adminRoutes);
 // by homeRoutes (which has no strict user auth) before falling through
 // to artistRoutes which has strict requireUserAuth middleware.
 app.use('/api', homeRoutes);
-app.use('/api', userRoutes);
-app.use('/api', likeRoutes);
-app.use('/api', playlistRoutes);
 
 app.use('/api/artist', artistRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/likes', likeRoutes);
 app.use('/api/playlist', playlistRoutes);
+
+// Fallback for root /api mounts for specific routes that rely on it
+app.use('/api', userRoutes);
+app.use('/api', likeRoutes);
+app.use('/api', playlistRoutes);
 
 
 // Serve Static Frontend in Production
