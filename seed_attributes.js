@@ -77,9 +77,6 @@ const data = [
 
 async function seedAttributes() {
   try {
-    const count = await SongAttribute.count();
-    if (count > 0) return; // Only seed if empty
-
     console.log('Seeding attributes...');
     for (const item of data) {
       await SongAttribute.findOrCreate({
