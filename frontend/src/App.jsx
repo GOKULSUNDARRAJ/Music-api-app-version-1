@@ -1662,6 +1662,7 @@ function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
     setIsUploading(true);
     let successCount = 0;
     let failCount = 0;
+    let lastErrorMsg = '';
 
     for (const pair of matchedPairs) {
       const formData = new FormData();
@@ -1684,6 +1685,7 @@ function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
       } catch (err) {
         console.error('Failed smart upload', pair.name, err);
         failCount++;
+        lastErrorMsg = err.response?.data?.message || err.message || 'Unknown error';
       }
     }
 
@@ -1693,7 +1695,7 @@ function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
     onDataChange();
     setIsUploading(false);
     if (failCount > 0) {
-      alert(`Sync Complete: ${successCount} successful, ${failCount} failed. Check console for details.`);
+      alert(`Sync Complete: ${successCount} successful, ${failCount} failed. Error: ${lastErrorMsg}`);
     } else {
       alert(`Advanced Sync Complete: ${successCount} songs uploaded!`);
     }
