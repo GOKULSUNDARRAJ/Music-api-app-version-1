@@ -26,6 +26,34 @@ const Song = sequelize.define('Song', {
       key: 'id'
     }
   },
+  actorName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  heroineName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  singerName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  movieName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  musicDirector: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  releaseYear: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  genre: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   lyrics: {
     type: DataTypes.TEXT,
     allowNull: true,

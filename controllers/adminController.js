@@ -418,7 +418,14 @@ exports.uploadSongs = async (req, res, next) => {
       audioName: req.body.audioName || audioFile.originalname.replace(/\.[^/.]+$/, ""),
       audioUrl: audioUrl,
       imageUrl: finalImageUrl,
-      categoryId: Number(categoryId)
+      categoryId: Number(categoryId),
+      actorName: req.body.actorName || null,
+      heroineName: req.body.heroineName || null,
+      singerName: req.body.singerName || null,
+      movieName: req.body.movieName || null,
+      musicDirector: req.body.musicDirector || null,
+      releaseYear: req.body.releaseYear || null,
+      genre: req.body.genre || null
     };
 
     const song = await Song.create(newSong, { transaction });
@@ -457,7 +464,14 @@ exports.bulkCreateSongs = async (req, res, next) => {
       audioName: s.audioName,
       audioUrl: s.audioUrl,
       imageUrl: s.imageUrl || '',
-      categoryId: Number(s.categoryId)
+      categoryId: Number(s.categoryId),
+      actorName: s.actorName || null,
+      heroineName: s.heroineName || null,
+      singerName: s.singerName || null,
+      movieName: s.movieName || null,
+      musicDirector: s.musicDirector || null,
+      releaseYear: s.releaseYear || null,
+      genre: s.genre || null
     })), { transaction });
 
     await transaction.commit();
