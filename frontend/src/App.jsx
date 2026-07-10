@@ -432,6 +432,20 @@ function CategorySongsManager({ category, onBack, contentType, onDataChange }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Metadata Filter State
+  const [attributes, setAttributes] = useState([]);
+  const [filterActor, setFilterActor] = useState('');
+  const [filterHeroine, setFilterHeroine] = useState('');
+  const [filterSinger, setFilterSinger] = useState('');
+  const [filterMovie, setFilterMovie] = useState('');
+  const [filterMusicDirector, setFilterMusicDirector] = useState('');
+  const [filterReleaseYear, setFilterReleaseYear] = useState('');
+  const [filterGenre, setFilterGenre] = useState('');
+
+  useEffect(() => {
+    api.get('/admin/attributes').then(res => setAttributes(res.data)).catch(console.error);
+  }, []);
+
   useEffect(() => {
     const loadSongs = async () => {
       try {
@@ -469,7 +483,26 @@ function CategorySongsManager({ category, onBack, contentType, onDataChange }) {
     }
   };
 
-  const filteredSongs = songs.filter(s => s.audioName.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredSongs = songs.filter(s => {
+    if (searchQuery && !s.audioName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterActor && s.actorName !== filterActor) return false;
+    if (filterHeroine && s.heroineName !== filterHeroine) return false;
+    if (filterSinger && s.singerName !== filterSinger) return false;
+    if (filterMovie && s.movieName !== filterMovie) return false;
+    if (filterMusicDirector && s.musicDirector !== filterMusicDirector) return false;
+    if (filterReleaseYear && s.releaseYear !== filterReleaseYear) return false;
+    if (filterGenre && s.genre !== filterGenre) return false;
+    return true;
+  });
+
+  const generateYears = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = 0; i < 40; i++) {
+      years.push((currentYear - i).toString());
+    }
+    return years;
+  };
 
   return (
     <div>
@@ -489,6 +522,60 @@ function CategorySongsManager({ category, onBack, contentType, onDataChange }) {
         <button onClick={handleSave} disabled={isSaving} style={{ padding: '12px 24px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', minWidth: '150px' }}>
           {isSaving ? 'Saving...' : 'Save Songs to Category'}
         </button>
+      </div>
+
+      <div className="card" style={{ marginBottom: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', boxShadow: 'none' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>Actor Name</label>
+            <select value={filterActor} onChange={e => setFilterActor(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px' }}>
+              <option value="">All Actors</option>
+              {attributes.filter(a => a.type === 'Actor').map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>Heroine Name</label>
+            <select value={filterHeroine} onChange={e => setFilterHeroine(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px' }}>
+              <option value="">All Heroines</option>
+              {attributes.filter(a => a.type === 'Heroine').map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>Singer Name</label>
+            <select value={filterSinger} onChange={e => setFilterSinger(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px' }}>
+              <option value="">All Singers</option>
+              {attributes.filter(a => a.type === 'Singer').map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>Movie Name</label>
+            <select value={filterMovie} onChange={e => setFilterMovie(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px' }}>
+              <option value="">All Movies</option>
+              {attributes.filter(a => a.type === 'Movie').map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>Music Director</label>
+            <select value={filterMusicDirector} onChange={e => setFilterMusicDirector(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px' }}>
+              <option value="">All Directors</option>
+              {attributes.filter(a => a.type === 'Music Director').map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>Release Year</label>
+            <select value={filterReleaseYear} onChange={e => setFilterReleaseYear(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px' }}>
+              <option value="">All Years</option>
+              {generateYears().map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>Genre</label>
+            <select value={filterGenre} onChange={e => setFilterGenre(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px' }}>
+              <option value="">All Genres</option>
+              {attributes.filter(a => a.type === 'Genre').map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="table-container">
