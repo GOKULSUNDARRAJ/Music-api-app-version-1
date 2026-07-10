@@ -1760,7 +1760,12 @@ function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
             </div>
             <div>
               <label>Release Year (Optional)</label>
-              <input type="number" value={smartReleaseYear} onChange={e => setSmartReleaseYear(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="e.g. 2024" />
+              <select value={smartReleaseYear} onChange={e => setSmartReleaseYear(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                <option value="">Select Year</option>
+                {Array.from({length: 40}, (_, i) => new Date().getFullYear() - i).map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label>Genre (Optional)</label>
