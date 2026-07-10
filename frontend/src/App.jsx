@@ -286,6 +286,7 @@ function Categories({ onDataChange, contentType }) {
   const [sectionFilter, setSectionFilter] = useState('');
   const [form, setForm] = useState({ categoryName: '', categoryImage: '', adapterType: 1, sectionId: '' });
   const [editingId, setEditingId] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   const load = async () => {
     try {
@@ -324,6 +325,17 @@ function Categories({ onDataChange, contentType }) {
     await load();
     onDataChange();
   };
+
+  if (selectedCategory) {
+    return (
+      <CategorySongsManager 
+        category={selectedCategory} 
+        onBack={() => setSelectedCategory(null)} 
+        contentType={contentType} 
+        onDataChange={onDataChange} 
+      />
+    );
+  }
 
   return (
     <div>
@@ -376,11 +388,12 @@ function Categories({ onDataChange, contentType }) {
           {items.map((item) => {
             const section = sections.find(s => s.id === item.sectionId);
             return (
-              <div className="media-card" key={item.id}>
+              <div className="media-card" key={item.id} onClick={() => setSelectedCategory(item)}>
                 <div className="media-card-img-wrapper">
                   <img src={item.categoryImage || 'https://via.placeholder.com/300?text=No+Image'} alt={item.categoryName} className="media-card-img" />
                   <div className="media-card-overlay">
-                    <button onClick={() => {
+                    <button onClick={(e) => {
+                      e.stopPropagation();
                       setEditingId(item.id);
                       setForm({
                         categoryName: item.categoryName,
@@ -409,6 +422,120 @@ function Categories({ onDataChange, contentType }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function CategorySongsManager({ category, onBack, contentType, onDataChange }) {
+  const [songs, setSongs] = useState([]);
+  const [selectedSongIds, setSelectedSongIds] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const loadSongs = async () => {
+      try {
+        const { data } = await api.get(`/admin/songs?contentType=${contentType}`);
+        setSongs(data);
+        // Pre-select songs that already belong to this category
+        const preSelected = data.filter(s => s.categoryId === category.id).map(s => s.id);
+        setSelectedSongIds(preSelected);
+      } catch (err) {
+        console.error('Failed to load songs:', err);
+        alert('Failed to load songs');
+      }
+    };
+    loadSongs();
+  }, [contentType, category.id]);
+
+  const toggleSong = (songId) => {
+    setSelectedSongIds(prev => 
+      prev.includes(songId) ? prev.filter(id => id !== songId) : [...prev, songId]
+    );
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await api.put(`/admin/category/${category.id}/songs`, { selectedSongIds });
+      alert('Category songs updated successfully!');
+      onDataChange();
+      onBack();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to update category songs');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const filteredSongs = songs.filter(s => s.audioName.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+        <button onClick={onBack} style={{ padding: '8px 16px', background: '#e2e8f0', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>&larr; Back</button>
+        <h2 style={{ margin: 0 }}>Assign Songs: <span style={{ color: 'var(--primary)' }}>{category.categoryName}</span></h2>
+      </div>
+
+      <div className="card" style={{ marginBottom: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+        <input 
+          type="text" 
+          placeholder="Search all uploaded songs..." 
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+        />
+        <button onClick={handleSave} disabled={isSaving} style={{ padding: '12px 24px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', minWidth: '150px' }}>
+          {isSaving ? 'Saving...' : 'Save Songs to Category'}
+        </button>
+      </div>
+
+      <div className="table-container">
+        <table className="table">
+          <thead>
+            <tr>
+              <th style={{ width: '50px', textAlign: 'center' }}>Select</th>
+              <th>Song ID</th>
+              <th>Audio Name</th>
+              <th>Image</th>
+              <th>Current Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredSongs.length === 0 ? (
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }} className="muted">No songs found.</td></tr>
+            ) : (
+              filteredSongs.map(song => (
+                <tr key={song.id} style={{ background: selectedSongIds.includes(song.id) ? '#f0f9ff' : 'transparent', cursor: 'pointer' }} onClick={() => toggleSong(song.id)}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedSongIds.includes(song.id)}
+                      onChange={() => {}} // Handled by tr onClick
+                      style={{ transform: 'scale(1.3)', cursor: 'pointer' }}
+                    />
+                  </td>
+                  <td><span className="id-badge">{song.songId || song.id}</span></td>
+                  <td style={{ fontWeight: selectedSongIds.includes(song.id) ? 'bold' : 'normal' }}>{song.audioName}</td>
+                  <td>
+                    {song.imageUrl && <img src={song.imageUrl} alt="" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />}
+                  </td>
+                  <td>
+                    {song.categoryId === category.id ? (
+                      <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>This Category</span>
+                    ) : song.categoryId ? (
+                      <span className="muted">Category ID: {song.categoryId}</span>
+                    ) : (
+                      <span className="muted">None</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

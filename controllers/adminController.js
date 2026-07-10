@@ -245,6 +245,68 @@ exports.updateCategory = async (req, res, next) => {
   }
 };
 
+exports.updateCategorySongs = async (req, res, next) => {
+  const transaction = await require('../models').sequelize.transaction();
+  try {
+    const categoryId = req.params.id;
+    const { selectedSongIds } = req.body; // Array of song IDs
+
+    if (!Array.isArray(selectedSongIds)) {
+      return res.status(400).json({ message: 'selectedSongIds must be an array' });
+    }
+
+    const category = await Category.findByPk(categoryId);
+    if (!category) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    const { Op } = require('sequelize');
+
+    // 1. Remove categoryId from all songs currently in this category that are NOT in the selected list
+    if (selectedSongIds.length > 0) {
+      await Song.update(
+        { categoryId: null },
+        { 
+          where: { 
+            categoryId: categoryId,
+            id: { [Op.notIn]: selectedSongIds }
+          },
+          transaction
+        }
+      );
+    } else {
+      // If list is empty, remove categoryId from ALL songs currently in this category
+      await Song.update(
+        { categoryId: null },
+        { 
+          where: { categoryId: categoryId },
+          transaction
+        }
+      );
+    }
+
+    // 2. Add categoryId to all songs in the selected list
+    if (selectedSongIds.length > 0) {
+      await Song.update(
+        { categoryId: categoryId },
+        { 
+          where: { 
+            id: { [Op.in]: selectedSongIds }
+          },
+          transaction
+        }
+      );
+    }
+
+    await transaction.commit();
+    return res.status(200).json({ message: 'Category songs updated successfully' });
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    return next(error);
+  }
+};
+
 exports.deleteCategory = async (req, res, next) => {
   try {
     const category = await Category.findByPk(req.params.id);
