@@ -449,7 +449,7 @@ function CategorySongsManager({ category, onBack, contentType, onDataChange }) {
   useEffect(() => {
     const loadSongs = async () => {
       try {
-        const { data } = await api.get(`/admin/songs?contentType=${contentType}`);
+        const { data } = await api.get('/admin/songs');
         setSongs(data);
         // Pre-select songs that already belong to this category
         const preSelected = data.filter(s => s.categoryId === category.id).map(s => s.id);
@@ -460,7 +460,7 @@ function CategorySongsManager({ category, onBack, contentType, onDataChange }) {
       }
     };
     loadSongs();
-  }, [contentType, category.id]);
+  }, [category.id]);
 
   const toggleSong = (songId) => {
     setSelectedSongIds(prev => 
