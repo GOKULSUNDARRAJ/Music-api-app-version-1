@@ -30,6 +30,8 @@ exports.checkRegister = async (req, res, next) => {
     const {
       grant_type,
       client_id,
+      email,
+      password,
       userMobile,
       userCountry,
       name = '',
@@ -39,17 +41,49 @@ exports.checkRegister = async (req, res, next) => {
       referalCode = null
     } = req.body;
 
-    if (!userMobile) {
+    if (!email && !userMobile) {
       return res.status(400).json({
         status: false,
         error_type: '400',
-        message: 'userMobile is required'
+        message: 'email or userMobile is required'
       });
     }
 
-    const existing = await User.findOne({ where: { userMobile } });
+    if (email && !password) {
+      return res.status(400).json({
+        status: false,
+        error_type: '400',
+        message: 'password is required for email login'
+      });
+    }
+
+    let existing = null;
+    if (email) {
+      existing = await User.findOne({ where: { userEmail: email } });
+    } else {
+      existing = await User.findOne({ where: { userMobile } });
+    }
 
     if (existing) {
+      if (email) {
+        // Verify password
+        if (!existing.userPassword) {
+          return res.status(400).json({
+            status: false,
+            error_type: '400',
+            message: 'Invalid login method. Please use mobile login.'
+          });
+        }
+        const isMatch = await bcrypt.compare(password, existing.userPassword);
+        if (!isMatch) {
+          return res.status(401).json({
+            status: false,
+            error_type: '401',
+            message: 'Invalid password'
+          });
+        }
+      }
+
       // Update device info
       await existing.update({
         deviceID: deviceID ?? existing.deviceID,
@@ -59,7 +93,11 @@ exports.checkRegister = async (req, res, next) => {
 
       const { access_token, refresh_token } = generateTokens(existing.id);
 
-      if (existing.isVerified) {
+      // Email users are auto-verified for now
+      if (existing.isVerified || email) {
+        if (email && !existing.isVerified) {
+          await existing.update({ isVerified: true });
+        }
         // ── Verified user → full user info + error_type 200 ──
         return res.status(200).json({
           status: true,
@@ -68,17 +106,17 @@ exports.checkRegister = async (req, res, next) => {
             userId: existing.id,
             userName: existing.userName,
             userEmail: existing.userEmail || '',
-            userMobile: existing.userMobile,
-            userCountry: existing.userCountry,
-            userCountryId: existing.userCountryId,
+            userMobile: existing.userMobile || '',
+            userCountry: existing.userCountry || '',
+            userCountryId: existing.userCountryId || '',
             userCreatedDate: formatDate(existing.userCreatedDate),
-            userCountryCode: existing.userCountryCode,
+            userCountryCode: existing.userCountryCode || '',
             token_type: 'Bearer',
             expires_in: JWT_EXPIRES_IN,
             access_token,
             refresh_token
           },
-          message: 'You are successfully registered.',
+          message: 'You are successfully logged in.',
           error_type: '200'
         });
       } else {
@@ -98,10 +136,17 @@ exports.checkRegister = async (req, res, next) => {
       }
     }
 
-    // ── New number → create user (unverified) + return tokens ──
+    // ── New user → create user ──
+    let hashedPassword = null;
+    if (email) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
     const newUser = await User.create({
       userName: name,
-      userMobile,
+      userEmail: email || null,
+      userMobile: email ? null : userMobile,
+      userPassword: hashedPassword,
       userCountryId: userCountry || '',
       userCountry: '',
       userCountryCode: '',
@@ -109,7 +154,7 @@ exports.checkRegister = async (req, res, next) => {
       mobileType,
       device_token,
       referalCode,
-      isVerified: false
+      isVerified: email ? true : false // Auto verify email for now
     });
 
     const { access_token, refresh_token } = generateTokens(newUser.id);
@@ -118,13 +163,21 @@ exports.checkRegister = async (req, res, next) => {
       status: true,
       result: 'true',
       response: {
+        userId: newUser.id,
+        userName: newUser.userName,
+        userEmail: newUser.userEmail || '',
+        userMobile: newUser.userMobile || '',
+        userCountry: newUser.userCountry || '',
+        userCountryId: newUser.userCountryId || '',
+        userCreatedDate: formatDate(newUser.userCreatedDate),
+        userCountryCode: newUser.userCountryCode || '',
         token_type: 'Bearer',
-        expires_in: JWT_EXPIRES_IN - 1,
+        expires_in: email ? JWT_EXPIRES_IN : JWT_EXPIRES_IN - 1,
         access_token,
         refresh_token
       },
-      message: 'You are successfully registered, Verify your mobile number',
-      error_type: '202'
+      message: email ? 'You are successfully registered.' : 'You are successfully registered, Verify your mobile number',
+      error_type: email ? '200' : '202'
     });
   } catch (error) {
     return next(error);

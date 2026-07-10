@@ -15,11 +15,11 @@ const User = sequelize.define('User', {
   userEmail: {
     type: DataTypes.STRING(150),
     allowNull: true,
-    defaultValue: null
+    unique: true
   },
   userMobile: {
     type: DataTypes.STRING(20),
-    allowNull: false,
+    allowNull: true,
     unique: true
   },
   userPassword: {
@@ -29,17 +29,17 @@ const User = sequelize.define('User', {
   },
   userCountry: {
     type: DataTypes.STRING(100),
-    allowNull: false,
+    allowNull: true,
     defaultValue: ''
   },
   userCountryId: {
     type: DataTypes.STRING(10),
-    allowNull: false,
+    allowNull: true,
     defaultValue: ''
   },
   userCountryCode: {
     type: DataTypes.STRING(10),
-    allowNull: false,
+    allowNull: true,
     defaultValue: ''
   },
   deviceID: {
