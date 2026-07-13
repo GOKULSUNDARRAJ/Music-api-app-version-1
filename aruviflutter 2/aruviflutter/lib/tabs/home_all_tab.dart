@@ -80,7 +80,7 @@ class _HomeAllTabState extends State<HomeAllTab> {
       } else {
         if (mounted) {
           setState(() {
-            _errorMessage = 'Failed to load data: \${response.statusCode}';
+            _errorMessage = 'Failed to load data: ${response.statusCode}';
             _isLoading = false;
           });
         }

@@ -53,7 +53,7 @@ class _CollaborativePlaylistDetailsScreenState extends State<CollaborativePlayli
       if (token == null) return;
       
       final response = await http.get(
-        Uri.parse('https://music-app-api-1.onrender.com/api/user/collaborative-playlist/\${widget.playlistId}'),
+        Uri.parse('https://music-app-api-1.onrender.com/api/user/collaborative-playlist/${widget.playlistId}'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -84,7 +84,7 @@ class _CollaborativePlaylistDetailsScreenState extends State<CollaborativePlayli
       if (token == null) return;
 
       final response = await http.delete(
-        Uri.parse('https://music-app-api-1.onrender.com/api/user/collaborative-playlist/\${widget.playlistId}/song/$entryId'),
+        Uri.parse('https://music-app-api-1.onrender.com/api/user/collaborative-playlist/${widget.playlistId}/song/$entryId'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -120,7 +120,7 @@ class _CollaborativePlaylistDetailsScreenState extends State<CollaborativePlayli
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
-              Share.share('Join my collaborative playlist "${widget.playlistName}" using code: \${widget.inviteCode}');
+              Share.share('Join my collaborative playlist "${widget.playlistName}" using code: ${widget.inviteCode}');
             },
           ),
         ],

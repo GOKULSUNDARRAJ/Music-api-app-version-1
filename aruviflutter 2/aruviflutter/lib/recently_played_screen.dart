@@ -75,7 +75,7 @@ class _RecentlyPlayedScreenState extends State<RecentlyPlayedScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '\${_songs.length} Songs',
+                        '${_songs.length} Songs',
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 14,
