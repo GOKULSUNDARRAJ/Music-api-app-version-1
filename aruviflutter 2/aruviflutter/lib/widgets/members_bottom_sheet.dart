@@ -187,7 +187,7 @@ class _MembersBottomSheetState extends State<MembersBottomSheet> {
                         },
                       ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 100),
         ],
       ),
     );
