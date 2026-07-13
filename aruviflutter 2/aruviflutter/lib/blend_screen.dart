@@ -195,6 +195,7 @@ class _BlendScreenState extends State<BlendScreen> {
                                 'Tap to listen to your shared tastes',
                                 style: TextStyle(color: Colors.white70, fontSize: 13),
                               ),
+                              trailing: _buildOverlappingCircles(blend['blendName']),
                               onTap: () => _openBlend(blend),
                             );
                           },
@@ -202,6 +203,57 @@ class _BlendScreenState extends State<BlendScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildOverlappingCircles(String name) {
+    String initial = 'B';
+    if (name.toLowerCase().contains('with ')) {
+      final parts = name.split(RegExp(r'(?i)with '));
+      if (parts.length > 1 && parts.last.trim().isNotEmpty) {
+        initial = parts.last.trim()[0].toUpperCase();
+      }
+    } else if (name.isNotEmpty) {
+      initial = name[0].toUpperCase();
+    }
+
+    return SizedBox(
+      width: 54,
+      height: 36,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            right: 0,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: Color(0xFF282828),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5A2B), // Brownish
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF121212), width: 3),
+              ),
+              child: Center(
+                child: Text(
+                  initial,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
