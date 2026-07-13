@@ -56,25 +56,37 @@ exports.toggleSongLike = async (req, res, next) => {
     let { songId, action } = req.body;
     const userId = req.userId;
 
+    console.log(`[toggleSongLike] Received request - userId: ${userId}, songId: ${songId}, action: ${action}`);
+
     if (!songId) {
+      console.log(`[toggleSongLike] Error: songId is missing`);
       return res.status(400).json({ status: false, message: 'songId is required' });
     }
 
     if (typeof songId === 'string' && songId.startsWith('song_')) {
       songId = parseInt(songId.split('_')[1], 10);
+      console.log(`[toggleSongLike] Parsed songId from string: ${songId}`);
     }
 
     const existing = await Like.findOne({ where: { userId, songId } });
+    console.log(`[toggleSongLike] Existing like found: ${!!existing}`);
 
     if (action === 'unlike') {
-      if (existing) await existing.destroy();
+      if (existing) {
+        await existing.destroy();
+        console.log(`[toggleSongLike] Destroyed existing like`);
+      }
       return res.json({ status: true, message: 'Song unliked successfully', isLiked: false });
     } else {
       // action === 'like' or default toggle behavior
-      if (!existing) await Like.create({ userId, songId });
+      if (!existing) {
+        await Like.create({ userId, songId });
+        console.log(`[toggleSongLike] Created new like`);
+      }
       return res.json({ status: true, message: 'Song liked successfully', isLiked: true });
     }
   } catch (err) {
+    console.error(`[toggleSongLike] ERROR:`, err);
     return next(err);
   }
 };

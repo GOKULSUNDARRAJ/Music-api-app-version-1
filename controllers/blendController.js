@@ -107,6 +107,8 @@ exports.getPlaylist = async (req, res, next) => {
       return res.status(403).json({ status: false, message: 'Unauthorized access to this blend' });
     }
 
+    console.log(`[getPlaylist] Fetching playlist for blend ${blendId}`);
+    
     // Get 50 recent likes for user1
     const user1Likes = await Like.findAll({
       where: { userId: blend.user1Id, songId: { [Op.ne]: null } },
@@ -119,6 +121,7 @@ exports.getPlaylist = async (req, res, next) => {
         }]
       }]
     });
+    console.log(`[getPlaylist] user1 (${blend.user1Id}) liked count: ${user1Likes.length}`);
 
     // Get 50 recent likes for user2
     const user2Likes = await Like.findAll({
@@ -132,6 +135,7 @@ exports.getPlaylist = async (req, res, next) => {
         }]
       }]
     });
+    console.log(`[getPlaylist] user2 (${blend.user2Id}) liked count: ${user2Likes.length}`);
 
     const user1Songs = user1Likes.map(l => l.song).filter(s => s != null);
     const user2Songs = user2Likes.map(l => l.song).filter(s => s != null);
@@ -143,6 +147,8 @@ exports.getPlaylist = async (req, res, next) => {
     const sharedSongs = user1Songs.filter(s => user2SongIds.has(s.id));
     const uniqueUser1Songs = user1Songs.filter(s => !user2SongIds.has(s.id));
     const uniqueUser2Songs = user2Songs.filter(s => !user1SongIds.has(s.id));
+
+    console.log(`[getPlaylist] sharedSongs: ${sharedSongs.length}, unique1: ${uniqueUser1Songs.length}, unique2: ${uniqueUser2Songs.length}`);
 
     // Combine: Shared first, then interleave
     let finalSongs = [...sharedSongs];
