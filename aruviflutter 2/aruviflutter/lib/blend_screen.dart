@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'playlist_screen.dart';
 import 'models/audio_model.dart';
+import 'create_blend_screen.dart';
 
 class BlendScreen extends StatefulWidget {
   const BlendScreen({super.key});
@@ -54,79 +55,15 @@ class _BlendScreenState extends State<BlendScreen> {
     }
   }
 
-  Future<void> _createBlend() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const Center(child: CircularProgressIndicator(color: Color(0xFF1DB954))),
+  void _createBlend() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateBlendScreen(
+          onBlendCreated: _fetchBlends,
+        ),
+      ),
     );
-    try {
-      final token = await _getToken();
-      if (token == null) {
-        Navigator.pop(context); // close loading
-        return;
-      }
-      
-      final response = await http.post(
-        Uri.parse('https://music-app-api-1.onrender.com/api/user/blend/invite'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      Navigator.pop(context); // close loading
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final inviteCode = data['inviteCode'];
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              backgroundColor: const Color(0xFF282828),
-              title: const Text('Blend Invite Code', style: TextStyle(color: Colors.white)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Share this code with a friend to create a Blend:', style: TextStyle(color: Colors.white70)),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: SelectableText(
-                      inviteCode,
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: inviteCode));
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Code copied to clipboard')));
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Copy', style: TextStyle(color: Color(0xFF1DB954))),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Done', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          );
-        }
-      } else {
-        final data = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Failed to create blend')));
-      }
-    } catch (e) {
-      Navigator.pop(context); // close loading
-      debugPrint('Error creating blend: $e');
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to create blend')));
-    }
   }
 
   Future<void> _joinBlend() async {
