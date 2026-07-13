@@ -16,6 +16,7 @@ import 'search_screen.dart';
 import 'library_screen.dart';
 import 'podcast_screen.dart';
 import 'widgets/create_playlist_dialog.dart';
+import 'create_playlist_screen.dart';
 import 'select_songs_screen.dart';
 import 'custom_playlists_screen.dart';
 import 'services/database_service.dart';
@@ -225,9 +226,9 @@ class _MainActivityState extends State<MainActivity> {
                             subtitle: const Text('Create a playlist with songs', style: TextStyle(color: Colors.white70, fontSize: 13)),
                             onTap: () async {
                               Navigator.pop(sheetContext);
-                              final name = await showDialog<String>(
-                                context: parentContext,
-                                builder: (context) => const CreatePlaylistDialog(),
+                              final name = await Navigator.push<String>(
+                                parentContext,
+                                MaterialPageRoute(builder: (context) => const CreatePlaylistScreen()),
                               );
                               if (name != null && name.isNotEmpty) {
                                 final playlistId = await DatabaseService().createCustomPlaylist(name);

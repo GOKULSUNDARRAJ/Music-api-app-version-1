@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'services/database_service.dart';
 import 'playlist_screen.dart';
-import 'widgets/create_playlist_dialog.dart';
+import 'create_playlist_screen.dart';
 import 'select_songs_screen.dart';
 
 class CustomPlaylistsScreen extends StatefulWidget {
@@ -70,9 +70,9 @@ class _CustomPlaylistsScreenState extends State<CustomPlaylistsScreen> {
           IconButton(
             icon: const Icon(Icons.add, color: Colors.white),
             onPressed: () async {
-              final name = await showDialog<String>(
-                context: context,
-                builder: (context) => const CreatePlaylistDialog(),
+              final name = await Navigator.push<String>(
+                context,
+                MaterialPageRoute(builder: (context) => const CreatePlaylistScreen()),
               );
               if (name != null && name.isNotEmpty) {
                 final playlistId = await DatabaseService().createCustomPlaylist(name);

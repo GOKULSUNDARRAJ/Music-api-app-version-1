@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/audio_model.dart';
 import '../services/database_service.dart';
 import '../services/download_service.dart';
-import 'create_playlist_dialog.dart';
+import '../create_playlist_screen.dart';
 
 class AddToPlaylistSheet extends StatefulWidget {
   final AudioModel song;
@@ -55,9 +55,9 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
   }
 
   Future<void> _createNewPlaylist() async {
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => const CreatePlaylistDialog(),
+    final name = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const CreatePlaylistScreen()),
     );
 
     if (name != null && name.isNotEmpty) {
