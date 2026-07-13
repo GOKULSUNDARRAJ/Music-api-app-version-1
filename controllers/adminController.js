@@ -206,7 +206,11 @@ exports.getCategories = async (req, res, next) => {
     const where = {};
     const include = [];
     if (req.query.sectionId) {
-      where.sectionId = req.query.sectionId;
+      if (req.query.sectionId === 'unassigned') {
+        where.sectionId = null;
+      } else {
+        where.sectionId = req.query.sectionId;
+      }
     }
     if (req.query.contentType) {
       include.push({

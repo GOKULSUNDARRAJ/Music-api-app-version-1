@@ -356,6 +356,7 @@ function Categories({ onDataChange, contentType }) {
         <label>Filter by section:</label>
         <select value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)}>
           <option value="">All</option>
+          <option value="unassigned">Unassigned (None)</option>
           {sections.map((s) => (
             <option key={s.id} value={s.id}>{s.sectionTitle}</option>
           ))}
