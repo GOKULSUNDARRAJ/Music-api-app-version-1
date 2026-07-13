@@ -161,10 +161,18 @@ exports.createCategory = async (req, res, next) => {
   try {
     const {
       categoryName,
-      categoryImage = '',
       adapterType = 1,
       sectionId
     } = req.body;
+    let categoryImage = req.body.categoryImage || '';
+
+    if (req.file) {
+      categoryImage = req.file.fileUrl || req.file.publicUrl;
+      if (!process.env.FIREBASE_PROJECT_ID) {
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        categoryImage = `${baseUrl}/uploads/${req.file.filename}`;
+      }
+    }
 
     if (!categoryName || !sectionId) {
       return res.status(400).json({ message: 'categoryName and sectionId are required' });
@@ -223,7 +231,16 @@ exports.updateCategory = async (req, res, next) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    const { categoryName, categoryImage, adapterType, sectionId } = req.body;
+    const { categoryName, adapterType, sectionId } = req.body;
+    let categoryImage = req.body.categoryImage;
+
+    if (req.file) {
+      categoryImage = req.file.fileUrl || req.file.publicUrl;
+      if (!process.env.FIREBASE_PROJECT_ID) {
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        categoryImage = `${baseUrl}/uploads/${req.file.filename}`;
+      }
+    }
 
     if (sectionId) {
       const section = await Section.findByPk(sectionId);
@@ -234,7 +251,7 @@ exports.updateCategory = async (req, res, next) => {
 
     await category.update({
       categoryName: categoryName ?? category.categoryName,
-      categoryImage: categoryImage ?? category.categoryImage,
+      categoryImage: categoryImage !== undefined ? categoryImage : category.categoryImage,
       adapterType: adapterType ?? category.adapterType,
       sectionId: sectionId ?? category.sectionId
     });

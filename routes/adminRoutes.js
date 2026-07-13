@@ -84,9 +84,9 @@ router.get('/sections', requireAdminAuth, adminController.getSections);
 router.put('/section/:id', requireAdminAuth, adminController.updateSection);
 router.delete('/section/:id', requireAdminAuth, adminController.deleteSection);
 
-router.post('/category', requireAdminAuth, adminController.createCategory);
+router.post('/category', requireAdminAuth, upload.single('image'), adminController.createCategory);
 router.get('/categories', requireAdminAuth, adminController.getCategories);
-router.put('/category/:id', requireAdminAuth, adminController.updateCategory);
+router.put('/category/:id', requireAdminAuth, upload.single('image'), adminController.updateCategory);
 router.put('/category/:id/songs', requireAdminAuth, adminController.updateCategorySongs);
 router.delete('/category/:id', requireAdminAuth, adminController.deleteCategory);
 

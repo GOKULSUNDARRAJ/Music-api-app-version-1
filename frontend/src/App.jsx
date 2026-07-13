@@ -284,7 +284,7 @@ function Categories({ onDataChange, contentType }) {
   const [items, setItems] = useState([]);
   const [sections, setSections] = useState([]);
   const [sectionFilter, setSectionFilter] = useState('');
-  const [form, setForm] = useState({ categoryName: '', categoryImage: '', adapterType: 1, sectionId: '' });
+  const [form, setForm] = useState({ categoryName: '', categoryImage: '', imageFile: null, adapterType: 1, sectionId: '' });
   const [editingId, setEditingId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
@@ -314,16 +314,28 @@ function Categories({ onDataChange, contentType }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    const payload = { ...form, sectionId: Number(form.sectionId) };
-    if (editingId) {
-      await api.put(`/admin/category/${editingId}`, payload);
-    } else {
-      await api.post('/admin/category', payload);
+    
+    const formData = new FormData();
+    formData.append('categoryName', form.categoryName);
+    formData.append('adapterType', form.adapterType);
+    formData.append('sectionId', form.sectionId);
+    if (form.categoryImage) formData.append('categoryImage', form.categoryImage);
+    if (form.imageFile) formData.append('image', form.imageFile);
+
+    try {
+      if (editingId) {
+        await api.put(`/admin/category/${editingId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      } else {
+        await api.post('/admin/category', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      }
+      setForm({ categoryName: '', categoryImage: '', imageFile: null, adapterType: 1, sectionId: '' });
+      setEditingId(null);
+      await load();
+      onDataChange();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to save category');
     }
-    setForm({ categoryName: '', categoryImage: '', adapterType: 1, sectionId: '' });
-    setEditingId(null);
-    await load();
-    onDataChange();
   };
 
   if (selectedCategory) {
@@ -357,8 +369,11 @@ function Categories({ onDataChange, contentType }) {
             <input type="text" value={form.categoryName} onChange={(e) => setForm(p => ({ ...p, categoryName: e.target.value }))} required />
           </div>
           <div>
-            <label>Category Image URL</label>
-            <input type="text" value={form.categoryImage} onChange={(e) => setForm(p => ({ ...p, categoryImage: e.target.value }))} />
+            <label>Category Image</label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input type="file" accept="image/*" onChange={(e) => setForm(p => ({ ...p, imageFile: e.target.files[0] }))} style={{ flex: 1 }} />
+              <input type="text" placeholder="Or Image URL" value={form.categoryImage} onChange={(e) => setForm(p => ({ ...p, categoryImage: e.target.value }))} style={{ flex: 1 }} />
+            </div>
           </div>
           <div>
             <label>Adapter Type</label>
@@ -375,7 +390,7 @@ function Categories({ onDataChange, contentType }) {
           </div>
           <div className="actions" style={{ alignItems: 'flex-end', display: 'flex', gap: '10px' }}>
             <button type="submit">{editingId ? 'Update' : 'Add'}</button>
-            {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ categoryName: '', categoryImage: '', adapterType: 1, sectionId: '' }); }}>Cancel</button>}
+            {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ categoryName: '', categoryImage: '', imageFile: null, adapterType: 1, sectionId: '' }); }}>Cancel</button>}
           </div>
         </form>
       </div>
@@ -398,6 +413,7 @@ function Categories({ onDataChange, contentType }) {
                       setForm({
                         categoryName: item.categoryName,
                         categoryImage: item.categoryImage || '',
+                        imageFile: null,
                         adapterType: item.adapterType,
                         sectionId: String(item.sectionId)
                       });
