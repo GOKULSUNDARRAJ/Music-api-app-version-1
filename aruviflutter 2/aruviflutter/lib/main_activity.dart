@@ -391,7 +391,8 @@ class _MainActivityState extends State<MainActivity> {
                   animation: AudioService(),
                   builder: (context, child) {
                     final audioService = AudioService();
-                    if (audioService.currentSong == null) return const SizedBox.shrink();
+                    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+                    if (audioService.currentSong == null || isKeyboardOpen) return const SizedBox.shrink();
 
                     double progress = 0.0;
                     if (audioService.duration.inMilliseconds > 0) {
