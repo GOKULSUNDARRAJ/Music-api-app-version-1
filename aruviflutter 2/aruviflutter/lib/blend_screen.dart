@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'playlist_screen.dart';
 import 'models/audio_model.dart';
 import 'create_blend_screen.dart';
+import 'join_blend_screen.dart';
 
 class BlendScreen extends StatefulWidget {
   const BlendScreen({super.key});
@@ -66,61 +67,13 @@ class _BlendScreenState extends State<BlendScreen> {
     );
   }
 
-  Future<void> _joinBlend() async {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF282828),
-        title: const Text('Join a Blend', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Enter Invite Code',
-            hintStyle: const TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1DB954))),
-          ),
+  void _joinBlend() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JoinBlendScreen(
+          onBlendJoined: _fetchBlends,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final code = controller.text.trim();
-              if (code.isEmpty) return;
-              Navigator.pop(ctx);
-              
-              try {
-                final token = await _getToken();
-                if (token == null) return;
-                
-                final response = await http.post(
-                  Uri.parse('https://music-app-api-1.onrender.com/api/user/blend/join'),
-                  headers: {
-                    'Authorization': 'Bearer $token',
-                    'Content-Type': 'application/json',
-                  },
-                  body: json.encode({'inviteCode': code}),
-                );
-
-                final data = json.decode(response.body);
-                if (response.statusCode == 200 && data['status'] == true) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Successfully joined blend!')));
-                  _fetchBlends();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Failed to join blend')));
-                }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error joining blend')));
-              }
-            },
-            child: const Text('Join', style: TextStyle(color: Color(0xFFEB1C24))),
-          ),
-        ],
       ),
     );
   }
