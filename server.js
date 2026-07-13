@@ -96,6 +96,10 @@ app.listen(PORT, () => {
         allowNull: true
       });
       console.log('Successfully altered categoryId and sectionId to allow null');
+      
+      const { Blend } = require('./models');
+      await Blend.sync({ alter: true });
+      console.log('Successfully synced blends table explicitly');
     } catch (err) {
       console.error('Failed to alter columns:', err);
     }
