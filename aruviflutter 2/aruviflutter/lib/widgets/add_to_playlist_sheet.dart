@@ -3,6 +3,9 @@ import '../models/audio_model.dart';
 import '../services/database_service.dart';
 import '../services/download_service.dart';
 import '../create_playlist_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AddToPlaylistSheet extends StatefulWidget {
   final AudioModel song;
@@ -15,7 +18,9 @@ class AddToPlaylistSheet extends StatefulWidget {
 
 class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
   List<Map<String, dynamic>> _playlists = [];
+  List<dynamic> _collaborativePlaylists = [];
   List<String> _addedPlaylistIds = [];
+  List<String> _addedCollaborativeIds = [];
   bool _isLoading = true;
 
   @override
@@ -45,10 +50,37 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
       mutablePlaylists.add(mutableP);
     }
 
+    // Fetch collaborative playlists
+    List<dynamic> collabPlaylists = [];
+    List<String> addedCollabIds = [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
+      if (token != null) {
+        final response = await http.get(
+          Uri.parse('https://music-app-api-1.onrender.com/api/user/collaborative-playlists'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['status'] == true) {
+            collabPlaylists = data['playlists'];
+            // To figure out if it's already added, we would ideally need a getSongs endpoint for each,
+            // or just assume not added and the backend will reject duplicates.
+            // For simplicity, we assume not added initially.
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching collaborative playlists: $e');
+    }
+
     if (mounted) {
       setState(() {
         _playlists = mutablePlaylists;
+        _collaborativePlaylists = collabPlaylists;
         _addedPlaylistIds = addedIds;
+        _addedCollaborativeIds = addedCollabIds;
         _isLoading = false;
       });
     }
@@ -80,11 +112,49 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
       Navigator.pop(context); // Close sheet
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added to \$playlistName'),
+          content: Text('Added to $playlistName'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         ),
       );
+    }
+  }
+
+  Future<void> _addSongToCollaborativePlaylist(String playlistId, String playlistName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
+      if (token == null) return;
+
+      final response = await http.post(
+        Uri.parse('https://music-app-api-1.onrender.com/api/user/collaborative-playlist/$playlistId/song'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'songId': widget.song.songId}),
+      );
+
+      if (response.statusCode == 201) {
+        if (mounted) {
+          setState(() {
+            _addedCollaborativeIds.add(playlistId);
+          });
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Added to $playlistName'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        final data = json.decode(response.body);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? 'Failed to add song'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error adding to collaborative playlist: $e');
     }
   }
 
@@ -170,6 +240,45 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                 },
               );
             }),
+            
+            // Collaborative Playlists
+            if (_collaborativePlaylists.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Text('Collaborative Playlists', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              ),
+              ..._collaborativePlaylists.map((playlist) {
+                final id = playlist['id'] as String;
+                final name = playlist['name'] as String;
+                final img = playlist['imageUrl'] as String?;
+                
+                return ListTile(
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF282828),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: img != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.network(img, fit: BoxFit.cover),
+                          )
+                        : const Icon(Icons.people_alt, color: Colors.white54),
+                  ),
+                  title: Text(name, style: const TextStyle(color: Colors.white)),
+                  trailing: _addedCollaborativeIds.contains(id) 
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : const Icon(Icons.add_circle_outline, color: Colors.white54),
+                  onTap: () {
+                    if (!_addedCollaborativeIds.contains(id)) {
+                      _addSongToCollaborativePlaylist(id, name);
+                    }
+                  },
+                );
+              }),
+            ],
             
             // New Playlist Button
             ListTile(

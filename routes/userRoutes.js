@@ -3,6 +3,7 @@ const multer = require('multer');
 const userController = require('../controllers/userController');
 const menuController = require('../controllers/menuController');
 const blendController = require('../controllers/blendController');
+const collaborativePlaylistController = require('../controllers/collaborativePlaylistController');
 const { requireUserAuth } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -48,5 +49,13 @@ router.post('/blend/invite', requireUserAuth, blendController.invite);
 router.post('/blend/join', requireUserAuth, smartParser, blendController.join);
 router.get('/blends', requireUserAuth, blendController.list);
 router.get('/blend/:blendId', requireUserAuth, blendController.getPlaylist);
+
+// Collaborative Playlist routes
+router.post('/collaborative-playlist', requireUserAuth, smartParser, collaborativePlaylistController.create);
+router.post('/collaborative-playlist/join', requireUserAuth, smartParser, collaborativePlaylistController.join);
+router.get('/collaborative-playlists', requireUserAuth, collaborativePlaylistController.list);
+router.get('/collaborative-playlist/:id', requireUserAuth, collaborativePlaylistController.getSongs);
+router.post('/collaborative-playlist/:id/song', requireUserAuth, smartParser, collaborativePlaylistController.addSong);
+router.delete('/collaborative-playlist/:id/song/:entryId', requireUserAuth, collaborativePlaylistController.removeSong);
 
 module.exports = router;

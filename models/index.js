@@ -12,6 +12,9 @@ const Playlist = require('./Playlist')(sequelize);
 const PlaylistItem = require('./PlaylistItem')(sequelize);
 const SongAttribute = require('./SongAttribute');
 const Blend = require('./Blend');
+const CollaborativePlaylist = require('./CollaborativePlaylist');
+const CollaborativePlaylistUser = require('./CollaborativePlaylistUser');
+const CollaborativePlaylistSong = require('./CollaborativePlaylistSong');
 
 // Define Relationships
 // One section has many categories
@@ -83,4 +86,23 @@ Blend.belongsTo(User, { foreignKey: 'user1Id', as: 'user1' });
 User.hasMany(Blend, { foreignKey: 'user2Id', as: 'blendsAccepted' });
 Blend.belongsTo(User, { foreignKey: 'user2Id', as: 'user2' });
 
-module.exports = { sequelize, Section, Category, Song, MenuItem, User, RecentlyPlayed, Like, Follow, Playlist, PlaylistItem, Advertisement, SongAttribute, Blend };
+// Collaborative Playlist Associations
+User.hasMany(CollaborativePlaylist, { foreignKey: 'ownerId', as: 'ownedCollaborativePlaylists' });
+CollaborativePlaylist.belongsTo(User, { foreignKey: 'ownerId', as: 'owner' });
+
+CollaborativePlaylist.hasMany(CollaborativePlaylistUser, { foreignKey: 'playlistId', as: 'members', onDelete: 'CASCADE' });
+CollaborativePlaylistUser.belongsTo(CollaborativePlaylist, { foreignKey: 'playlistId', as: 'playlist' });
+
+User.hasMany(CollaborativePlaylistUser, { foreignKey: 'userId', as: 'collaborativeMemberships', onDelete: 'CASCADE' });
+CollaborativePlaylistUser.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+CollaborativePlaylist.hasMany(CollaborativePlaylistSong, { foreignKey: 'playlistId', as: 'songs', onDelete: 'CASCADE' });
+CollaborativePlaylistSong.belongsTo(CollaborativePlaylist, { foreignKey: 'playlistId', as: 'playlist' });
+
+Song.hasMany(CollaborativePlaylistSong, { foreignKey: 'songId', as: 'collaborativePlaylistEntries', onDelete: 'CASCADE' });
+CollaborativePlaylistSong.belongsTo(Song, { foreignKey: 'songId', as: 'song' });
+
+User.hasMany(CollaborativePlaylistSong, { foreignKey: 'addedById', as: 'collaborativeAddedSongs' });
+CollaborativePlaylistSong.belongsTo(User, { foreignKey: 'addedById', as: 'addedBy' });
+
+module.exports = { sequelize, Section, Category, Song, MenuItem, User, RecentlyPlayed, Like, Follow, Playlist, PlaylistItem, Advertisement, SongAttribute, Blend, CollaborativePlaylist, CollaborativePlaylistUser, CollaborativePlaylistSong };

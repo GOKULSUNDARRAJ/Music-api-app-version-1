@@ -20,6 +20,7 @@ import 'select_songs_screen.dart';
 import 'custom_playlists_screen.dart';
 import 'services/database_service.dart';
 import 'blend_screen.dart';
+import 'collaborative_playlists_screen.dart';
 
 class MainActivity extends StatefulWidget {
   const MainActivity({super.key});
@@ -242,6 +243,23 @@ class _MainActivityState extends State<MainActivity> {
                                   );
                                 }
                               }
+                            },
+                          ),
+                          ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.white.withOpacity(0.1),
+                              radius: 24,
+                              child: const Icon(Icons.people_alt, color: Colors.white70, size: 26),
+                            ),
+                            title: const Text('Collaborative playlist', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                            subtitle: const Text('Create a playlist together with friends', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                            onTap: () {
+                              Navigator.pop(sheetContext);
+                              _navigatorKeys[_currentIndex].currentState?.push(
+                                MaterialPageRoute(
+                                  builder: (context) => const CollaborativePlaylistsScreen(),
+                                ),
+                              );
                             },
                           ),
                           ListTile(
