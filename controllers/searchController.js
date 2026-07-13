@@ -54,9 +54,9 @@ exports.search = async (req, res, next) => {
       audioName: song.audioName,
       audioUrl: song.audioUrl,
       imageUrl: song.imageUrl,
-      categoryName: song.category?.categoryName || '',
-      categoryId: song.category ? formatEntityId('cat', song.category.id) : '',
-      sectionTitle: song.category?.section?.sectionTitle || '',
+      categoryName: song.category?.categoryName || 'Single Track',
+      categoryId: song.category ? formatEntityId('cat', song.category.id) : 'cat_000',
+      sectionTitle: song.category?.section?.sectionTitle || 'Various',
       isLiked: userLikedSongs.has(song.id)
     }));
 
@@ -87,7 +87,7 @@ exports.search = async (req, res, next) => {
         audioUrl: song.audioUrl,
         category: playlist.categoryName,
         imageUrl: song.imageUrl,
-        categoryId: formatEntityId('cat', song.categoryId),
+        categoryId: formatEntityId('cat', playlist.id),
         isLiked: userLikedSongs.has(song.id)
       }))
     }));
