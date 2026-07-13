@@ -55,10 +55,74 @@ class _LikedScreenState extends State<LikedScreen> {
           _isLoadingPlaylists = false;
         });
       }
+
+      // Background sync for dynamic playlists (like blends)
+      _backgroundSyncDynamicPlaylists(loadedItems);
     } catch (e) {
       debugPrint('Failed to load local liked items: $e');
       if (mounted) setState(() => _isLoadingPlaylists = false);
     }
+  }
+
+  Future<void> _backgroundSyncDynamicPlaylists(List<ArtistCategory> playlists) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token') ?? '';
+      if (token.isEmpty) return;
+
+      bool cacheUpdated = false;
+      final likedListStr = prefs.getStringList('local_liked_playlists_data') ?? [];
+
+      for (var i = 0; i < playlists.length; i++) {
+        final category = playlists[i];
+        if (category.categoryId != null && category.categoryId!.startsWith('blend_')) {
+          final blendId = category.categoryId!.replaceAll('blend_', '');
+          final url = Uri.parse('https://music-app-api-1.onrender.com/api/user/blend/$blendId');
+          
+          final response = await http.get(url, headers: {'Authorization': 'Bearer $token'});
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body);
+            if (data['status'] == true) {
+              final List<dynamic> songsData = data['data'] ?? [];
+              final latestSongs = songsData.map((s) => AudioModel.fromJson(s)).toList();
+              
+              // Only update if the number of songs or the actual songs changed
+              if (latestSongs.length != category.songs?.length || 
+                  _songsListChanged(latestSongs, category.songs ?? [])) {
+                
+                category.songs = latestSongs;
+                
+                // Update in our memory list
+                final likedIndex = likedListStr.indexWhere((item) {
+                  try { return json.decode(item)['categoryId'] == category.categoryId; } catch (_) { return false; }
+                });
+                
+                if (likedIndex != -1) {
+                  likedListStr[likedIndex] = json.encode(category.toJson());
+                  cacheUpdated = true;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (cacheUpdated) {
+        await prefs.setStringList('local_liked_playlists_data', likedListStr);
+        // We do not need to setState because the user has to click into it to see songs anyway,
+        // but the cache is now updated for when they do!
+      }
+    } catch (e) {
+      debugPrint('Failed background sync: $e');
+    }
+  }
+
+  bool _songsListChanged(List<AudioModel> list1, List<AudioModel> list2) {
+    if (list1.length != list2.length) return true;
+    for (int i = 0; i < list1.length; i++) {
+      if (list1[i].songId != list2[i].songId) return true;
+    }
+    return false;
   }
 
   Future<void> _fetchLikedSongs() async {

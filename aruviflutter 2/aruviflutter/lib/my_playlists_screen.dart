@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/playlist_section.dart';
 import 'models/artist_category.dart';
+import 'models/audio_model.dart';
 import 'playlist_screen.dart';
 import 'services/audio_service.dart';
 
@@ -45,10 +46,70 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
           _isLoading = false;
         });
       }
+
+      // Background sync for dynamic playlists (like blends)
+      _backgroundSyncDynamicPlaylists(loadedItems);
     } catch (e) {
       debugPrint('Failed to load local playlist items: $e');
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _backgroundSyncDynamicPlaylists(List<ArtistCategory> playlists) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token') ?? '';
+      if (token.isEmpty) return;
+
+      bool cacheUpdated = false;
+      final addedListStr = prefs.getStringList('local_added_playlists_data') ?? [];
+
+      for (var i = 0; i < playlists.length; i++) {
+        final category = playlists[i];
+        if (category.categoryId != null && category.categoryId!.startsWith('blend_')) {
+          final blendId = category.categoryId!.replaceAll('blend_', '');
+          final url = Uri.parse('https://music-app-api-1.onrender.com/api/user/blend/$blendId');
+          
+          final response = await http.get(url, headers: {'Authorization': 'Bearer $token'});
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body);
+            if (data['status'] == true) {
+              final List<dynamic> songsData = data['data'] ?? [];
+              final latestSongs = songsData.map((s) => AudioModel.fromJson(s)).toList();
+              
+              if (latestSongs.length != category.songs?.length || 
+                  _songsListChanged(latestSongs, category.songs ?? [])) {
+                
+                category.songs = latestSongs;
+                
+                final index = addedListStr.indexWhere((item) {
+                  try { return json.decode(item)['categoryId'] == category.categoryId; } catch (_) { return false; }
+                });
+                
+                if (index != -1) {
+                  addedListStr[index] = json.encode(category.toJson());
+                  cacheUpdated = true;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (cacheUpdated) {
+        await prefs.setStringList('local_added_playlists_data', addedListStr);
+      }
+    } catch (e) {
+      debugPrint('Failed background sync: $e');
+    }
+  }
+
+  bool _songsListChanged(List<AudioModel> list1, List<AudioModel> list2) {
+    if (list1.length != list2.length) return true;
+    for (int i = 0; i < list1.length; i++) {
+      if (list1[i].songId != list2[i].songId) return true;
+    }
+    return false;
   }
 
   Widget _buildGridCardItem(BuildContext context, ArtistCategory category) {
