@@ -23,9 +23,16 @@ exports.search = async (req, res, next) => {
     // 1. Search Songs
     const { count: songCount, rows: songs } = await Song.findAndCountAll({
       where: {
-        audioName: {
-          [Op.substring]: q
-        }
+        [Op.or]: [
+          { audioName: { [Op.substring]: q } },
+          { actorName: { [Op.substring]: q } },
+          { heroineName: { [Op.substring]: q } },
+          { singerName: { [Op.substring]: q } },
+          { movieName: { [Op.substring]: q } },
+          { musicDirector: { [Op.substring]: q } },
+          { releaseYear: { [Op.substring]: q } },
+          { genre: { [Op.substring]: q } }
+        ]
       },
       include: [
         {
