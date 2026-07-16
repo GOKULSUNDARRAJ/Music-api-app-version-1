@@ -119,7 +119,7 @@ function App() {
             <small>Working on {contentType.toUpperCase()} content</small>
           </div>
         )}
-        {activeTab === 'Dashboard' && <Dashboard refreshKey={refreshKey} contentType={contentType} onAddCategory={(sid) => { setInitialSectionFilter('unassigned'); setInitialFormSection(sid); setActiveTab('Categories'); }} />}
+        {activeTab === 'Dashboard' && <Dashboard refreshKey={refreshKey} contentType={contentType} onDataChange={onDataChange} />}
         {activeTab === 'Sections' && <Sections onDataChange={onDataChange} contentType={contentType} onViewCategories={(sid) => { setInitialSectionFilter(sid); setInitialFormSection(''); setActiveTab('Categories'); }} />}
         {activeTab === 'Categories' && <Categories onDataChange={onDataChange} contentType={contentType} initialSectionFilter={initialSectionFilter} clearInitialSectionFilter={() => setInitialSectionFilter('')} initialFormSection={initialFormSection} />}
         {activeTab === 'Songs' && <Songs onDataChange={onDataChange} contentType={contentType} initialEditSong={songToEdit} clearEditSong={() => setSongToEdit(null)} />}
@@ -136,10 +136,11 @@ function App() {
   );
 }
 
-function Dashboard({ refreshKey, contentType, onAddCategory }) {
+function Dashboard({ refreshKey, contentType, onDataChange }) {
   const [counts, setCounts] = useState({ sections: 0, categories: 0, songs: 0, users: 0 });
   const [nestedData, setNestedData] = useState({ sections: [] });
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [assignSectionId, setAssignSectionId] = useState(null);
 
   useEffect(() => {
     api.get('/admin/dashboard').then((res) => setCounts(res.data));
@@ -161,7 +162,14 @@ function Dashboard({ refreshKey, contentType, onAddCategory }) {
 
   return (
     <div>
-      {selectedCategory ? (
+      {assignSectionId ? (
+        <AssignCategoryView 
+          sectionId={assignSectionId} 
+          contentType={contentType} 
+          onBack={() => setAssignSectionId(null)} 
+          onAssigned={() => { setAssignSectionId(null); onDataChange(); }} 
+        />
+      ) : selectedCategory ? (
         <CategoryDetailView category={selectedCategory} onBack={() => setSelectedCategory(null)} />
       ) : (
         <>
@@ -221,7 +229,7 @@ function Dashboard({ refreshKey, contentType, onAddCategory }) {
                 
                 {/* Add Category Button Card */}
                 <div
-                  onClick={() => onAddCategory && onAddCategory(section.sectionId)}
+                  onClick={() => setAssignSectionId(section.sectionId)}
                   style={{
                     cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     background: '#f8fafc', borderRadius: 14, border: '2px dashed #cbd5e1',
@@ -421,6 +429,103 @@ function CategoryDetailView({ category, onBack }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function AssignCategoryView({ sectionId, contentType, onBack, onAssigned }) {
+  const [categories, setCategories] = useState([]);
+  const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get(`/admin/categories?contentType=${contentType}&sectionId=unassigned`)
+      .then(res => setCategories(res.data))
+      .catch(err => console.error(err));
+  }, [contentType]);
+
+  const toggleSelect = (id) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedIds(newSet);
+  };
+
+  const handleAssign = async () => {
+    if (selectedIds.size === 0) return;
+    setLoading(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(id => 
+          api.put(`/admin/category/${id}`, { sectionId })
+        )
+      );
+      onAssigned();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to assign some categories.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = categories.filter(c => c.categoryName.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, padding: 30, boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 30 }}>
+        <button onClick={onBack} style={{ background: '#f1f5f9', border: 'none', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontWeight: 600 }}>← Back</button>
+        <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Assign Categories to Section <span style={{ color: '#6366f1' }}>{sectionId}</span></h2>
+        <div style={{ marginLeft: 'auto' }}>
+          <button 
+            onClick={handleAssign} 
+            disabled={selectedIds.size === 0 || loading}
+            style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 10, fontWeight: 700, cursor: selectedIds.size > 0 ? 'pointer' : 'not-allowed', opacity: selectedIds.size > 0 ? 1 : 0.5, transition: 'all 0.2s' }}
+          >
+            {loading ? 'Assigning...' : `Assign Selected (${selectedIds.size})`}
+          </button>
+        </div>
+      </div>
+
+      <input 
+        type="text" 
+        placeholder="🔍 Search unassigned categories..." 
+        value={search} 
+        onChange={e => setSearch(e.target.value)} 
+        style={{ width: '100%', padding: '14px 20px', fontSize: 16, borderRadius: 12, border: '2px solid #e2e8f0', marginBottom: 30, outline: 'none' }}
+      />
+
+      {categories.length === 0 ? (
+        <p className="muted" style={{ textAlign: 'center', marginTop: 40, fontSize: 18 }}>No unassigned categories available. Create some in the Categories tab first!</p>
+      ) : filtered.length === 0 ? (
+        <p className="muted" style={{ textAlign: 'center', marginTop: 40, fontSize: 16 }}>No categories match your search.</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 20 }}>
+          {filtered.map(cat => {
+            const isSelected = selectedIds.has(cat.id);
+            return (
+              <div 
+                key={cat.id} 
+                onClick={() => toggleSelect(cat.id)}
+                style={{
+                  cursor: 'pointer', borderRadius: 16, overflow: 'hidden', background: '#f8fafc',
+                  border: `3px solid ${isSelected ? '#6366f1' : 'transparent'}`,
+                  transition: 'all 0.2s', position: 'relative'
+                }}
+              >
+                <img src={cat.categoryImage || 'https://via.placeholder.com/300?text=No+Image'} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
+                <div style={{ padding: '12px 16px' }}>
+                  <div style={{ fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15 }}>{cat.categoryName}</div>
+                </div>
+                {isSelected && (
+                  <div style={{ position: 'absolute', top: 10, right: 10, background: '#6366f1', color: '#fff', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(99,102,241,0.5)' }}>✓</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
