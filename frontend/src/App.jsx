@@ -118,7 +118,7 @@ function App() {
             <small>Working on {contentType.toUpperCase()} content</small>
           </div>
         )}
-        {activeTab === 'Dashboard' && <Dashboard refreshKey={refreshKey} contentType={contentType} />}
+        {activeTab === 'Dashboard' && <Dashboard refreshKey={refreshKey} contentType={contentType} onAddCategory={(sid) => { setInitialSectionFilter(sid); setActiveTab('Categories'); }} />}
         {activeTab === 'Sections' && <Sections onDataChange={onDataChange} contentType={contentType} onViewCategories={(sid) => { setInitialSectionFilter(sid); setActiveTab('Categories'); }} />}
         {activeTab === 'Categories' && <Categories onDataChange={onDataChange} contentType={contentType} initialSectionFilter={initialSectionFilter} clearInitialSectionFilter={() => setInitialSectionFilter('')} />}
         {activeTab === 'Songs' && <Songs onDataChange={onDataChange} contentType={contentType} initialEditSong={songToEdit} clearEditSong={() => setSongToEdit(null)} />}
@@ -135,7 +135,7 @@ function App() {
   );
 }
 
-function Dashboard({ refreshKey, contentType }) {
+function Dashboard({ refreshKey, contentType, onAddCategory }) {
   const [counts, setCounts] = useState({ sections: 0, categories: 0, songs: 0, users: 0 });
   const [nestedData, setNestedData] = useState({ sections: [] });
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -213,15 +213,27 @@ function Dashboard({ refreshKey, contentType }) {
               </div>
 
               {/* Categories as media cards */}
-              {(section.categories || []).length === 0 ? (
-                <p className="muted" style={{ marginLeft: 16 }}>No categories</p>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 24, paddingLeft: 16 }}>
-                  {(section.categories || []).map((category) => (
-                    <CategoryCard key={category.categoryId} category={category} onSelect={() => setSelectedCategory(category)} />
-                  ))}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 24, paddingLeft: 16 }}>
+                {(section.categories || []).map((category) => (
+                  <CategoryCard key={category.categoryId} category={category} onSelect={() => setSelectedCategory(category)} />
+                ))}
+                
+                {/* Add Category Button Card */}
+                <div
+                  onClick={() => onAddCategory && onAddCategory(section.sectionId)}
+                  style={{
+                    cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    background: '#f8fafc', borderRadius: 14, border: '2px dashed #cbd5e1',
+                    aspectRatio: '1/1', transition: 'all 0.2s', color: '#64748b',
+                    height: 'auto'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.color = '#475569'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#64748b'; }}
+                >
+                  <div style={{ fontSize: 32, marginBottom: 8, fontWeight: 300 }}>+</div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>Add Category</div>
                 </div>
-              )}
+              </div>
             </div>
           ))
         )}
