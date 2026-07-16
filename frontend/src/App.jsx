@@ -138,6 +138,7 @@ function App() {
 function Dashboard({ refreshKey, contentType }) {
   const [counts, setCounts] = useState({ sections: 0, categories: 0, songs: 0, users: 0 });
   const [nestedData, setNestedData] = useState({ sections: [] });
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     api.get('/admin/dashboard').then((res) => setCounts(res.data));
@@ -159,7 +160,11 @@ function Dashboard({ refreshKey, contentType }) {
 
   return (
     <div>
-      <h2 style={{ fontWeight: 800, fontSize: '2rem', marginBottom: 28, background: 'linear-gradient(135deg,#6366f1,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Dashboard</h2>
+      {selectedCategory ? (
+        <CategoryDetailView category={selectedCategory} onBack={() => setSelectedCategory(null)} />
+      ) : (
+        <>
+          <h2 style={{ fontWeight: 800, fontSize: '2rem', marginBottom: 28, background: 'linear-gradient(135deg,#6366f1,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Dashboard</h2>
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 20, marginBottom: 40 }}>
@@ -213,7 +218,7 @@ function Dashboard({ refreshKey, contentType }) {
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 24, paddingLeft: 16 }}>
                   {(section.categories || []).map((category) => (
-                    <CategoryCard key={category.categoryId} category={category} />
+                    <CategoryCard key={category.categoryId} category={category} onSelect={() => setSelectedCategory(category)} />
                   ))}
                 </div>
               )}
@@ -221,13 +226,14 @@ function Dashboard({ refreshKey, contentType }) {
           ))
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
 
-function CategoryCard({ category }) {
+function CategoryCard({ category, onSelect }) {
   const [hovered, setHovered] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const songCount = (category.songs || []).length;
   const imgSrc = category.categoryImage || (category.songs?.[0]?.imageUrl) || null;
 
@@ -245,7 +251,7 @@ function CategoryCard({ category }) {
         style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onClick={() => setShowModal(true)}
+        onClick={() => onSelect && onSelect()}
       >
         {/* Square image */}
         <div style={{
@@ -298,112 +304,111 @@ function CategoryCard({ category }) {
           </div>
         </div>
       </div>
+    </>
+  );
+}
 
-      {/* Songs Modal */}
-      {showModal && (
-        <div
-          onClick={() => setShowModal(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 24,
-          }}
+function CategoryDetailView({ category, onBack }) {
+  const songCount = (category.songs || []).length;
+  const imgSrc = category.categoryImage || (category.songs?.[0]?.imageUrl) || null;
+
+  const getBadgeLabel = (cat) => {
+    if (cat.adapterType === 2) return { label: 'U1 Drug playlist', icon: '🎧', color: '#f59e0b' };
+    if (cat.adapterType === 3) return { label: 'Artist playlist', icon: '🎤', color: '#8b5cf6' };
+    return { label: 'Trending playlist', icon: '🔥', color: '#6366f1' };
+  };
+  const badge = getBadgeLabel(category);
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 20,
+        padding: '30px 40px',
+        background: 'linear-gradient(135deg,#0f172a,#1e1b4b)',
+      }}>
+        <button
+          onClick={onBack}
+          style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 18px', fontWeight: 700, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 0.2s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
         >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: '#fff', borderRadius: 20,
-              width: '100%', maxWidth: 600,
-              maxHeight: '80vh', display: 'flex', flexDirection: 'column',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.4)',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Modal Header */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 16,
-              padding: '20px 24px', borderBottom: '1px solid #f1f5f9',
-              background: 'linear-gradient(135deg,#0f172a,#1e1b4b)',
-            }}>
-              {imgSrc && (
-                <img src={imgSrc} alt={category.categoryName}
-                  style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
-                  onError={e => { e.target.style.display = 'none'; }}
-                />
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#fff', marginBottom: 4 }}>
-                  {category.categoryName}
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: badge.color, background: `${badge.color}22`, padding: '2px 8px', borderRadius: 20 }}>
-                    {badge.icon} {badge.label}
-                  </span>
-                  <span style={{ fontSize: 12, color: '#94a3b8' }}>{songCount} songs</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 700, fontSize: 18, cursor: 'pointer', flexShrink: 0 }}
-              >✕</button>
-            </div>
-
-            {/* Song List */}
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              {(category.songs || []).length === 0 ? (
-                <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>No songs found</div>
-              ) : (
-                (category.songs || []).map((song, idx) => (
-                  <div key={song.songId} style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '12px 20px',
-                    borderBottom: '1px solid #f8fafc',
-                    transition: 'background 0.15s',
-                    cursor: 'default',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    {/* Track number */}
-                    <div style={{ width: 28, textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#cbd5e1', flexShrink: 0 }}>
-                      {idx + 1}
-                    </div>
-
-                    {/* Album art thumbnail */}
-                    <div style={{ width: 44, height: 44, borderRadius: 8, overflow: 'hidden', background: '#1e293b', flexShrink: 0 }}>
-                      {song.imageUrl ? (
-                        <img src={song.imageUrl} alt={song.audioName}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          onError={e => { e.target.style.display = 'none'; }}
-                        />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🎵</div>
-                      )}
-                    </div>
-
-                    {/* Song info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {song.audioName}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-                        {song.duration || ''}
-                      </div>
-                    </div>
-
-                    {/* Song ID badge */}
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: 6, flexShrink: 0 }}>
-                      {song.songId}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
+          <span>←</span> Back
+        </button>
+        {imgSrc && (
+          <img src={imgSrc} alt={category.categoryName}
+            style={{ width: 100, height: 100, borderRadius: 16, objectFit: 'cover', flexShrink: 0, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
+            onError={e => { e.target.style.display = 'none'; }}
+          />
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: '2.5rem', color: '#fff', marginBottom: 8 }}>
+            {category.categoryName}
+          </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: badge.color, background: `${badge.color}22`, padding: '4px 12px', borderRadius: 20 }}>
+              {badge.icon} {badge.label}
+            </span>
+            <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 600 }}>{songCount} songs</span>
           </div>
         </div>
-      )}
-    </>
+      </div>
+
+      {/* Song List */}
+      <div style={{ flex: 1, padding: 20 }}>
+        {(category.songs || []).length === 0 ? (
+          <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontSize: 18 }}>No songs found in this category</div>
+        ) : (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {(category.songs || []).map((song, idx) => (
+              <div key={song.songId} style={{
+                display: 'flex', alignItems: 'center', gap: 16,
+                padding: '16px 24px',
+                borderRadius: 12,
+                border: '1px solid #f1f5f9',
+                transition: 'all 0.2s',
+                cursor: 'default',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#f1f5f9'; }}
+              >
+                {/* Track number */}
+                <div style={{ width: 32, textAlign: 'center', fontWeight: 700, fontSize: 15, color: '#cbd5e1', flexShrink: 0 }}>
+                  {idx + 1}
+                </div>
+
+                {/* Album art thumbnail */}
+                <div style={{ width: 56, height: 56, borderRadius: 10, overflow: 'hidden', background: '#1e293b', flexShrink: 0 }}>
+                  {song.imageUrl ? (
+                    <img src={song.imageUrl} alt={song.audioName}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🎵</div>
+                  )}
+                </div>
+
+                {/* Song info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {song.audioName}
+                  </div>
+                  <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>
+                    {song.duration || 'Unknown Duration'}
+                  </div>
+                </div>
+
+                {/* Song ID badge */}
+                <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: 8, flexShrink: 0 }}>
+                  {song.songId}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
