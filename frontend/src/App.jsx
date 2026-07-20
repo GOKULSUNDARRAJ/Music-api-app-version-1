@@ -151,7 +151,18 @@ function Dashboard({ refreshKey, contentType, onDataChange }) {
     let endpoint = '/home';
     if (contentType === 'devotional') endpoint = '/devotional';
     if (contentType === 'artist') endpoint = '/artist';
-    api.get(endpoint).then((res) => setNestedData(res.data));
+    api.get(endpoint).then((res) => {
+      setNestedData(res.data);
+      // If a category is currently open, update its reference with the newly fetched data
+      setSelectedCategory(prev => {
+        if (!prev) return null;
+        for (const section of (res.data.sections || [])) {
+          const updatedCat = section.categories?.find(c => c.categoryId === prev.categoryId);
+          if (updatedCat) return updatedCat;
+        }
+        return prev;
+      });
+    });
   }, [contentType, refreshKey]);
 
   const statCards = [
