@@ -4,7 +4,6 @@ import api, { setAuthToken } from './api';
 const TABS = ['Dashboard', 'Sections', 'Categories', 'Advanced Bulk', 'Attributes', 'Lyrics', 'Menu', 'Users', 'Ads'];
 const formatEntityId = (prefix, id) => `${prefix}_${String(id).padStart(3, '0')}`;
 const CONTENT_TYPES = [
-  { value: '', label: 'All' },
   { value: 'home', label: 'Home' },
   { value: 'devotional', label: 'Devotional' },
   { value: 'artist', label: 'Artist' }
