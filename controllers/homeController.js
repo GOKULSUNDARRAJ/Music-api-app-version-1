@@ -73,7 +73,7 @@ const getContentData = async (req, res, next, contentType) => {
     });
 
     // ── Prepend Recently Played if applicable ──
-    if (contentType === 'home' && req.userId) {
+    if ((contentType === 'home' || contentType === 'all') && req.userId) {
       const recentPlays = await RecentlyPlayed.findAll({
         where: { userId: req.userId },
         limit: 10,
@@ -125,8 +125,8 @@ const getContentData = async (req, res, next, contentType) => {
   }
 };
 
-exports.getHomeData = async (req, res, next) => getContentData(req, res, next, 'home');
-exports.getDevotionalData = async (req, res, next) => getContentData(req, res, next, 'devotional');
+exports.getHomeData = async (req, res, next) => getContentData(req, res, next, 'all');
+exports.getDevotionalData = async (req, res, next) => getContentData(req, res, next, 'divotional');
 exports.getArtistData = async (req, res, next) => getContentData(req, res, next, 'artist');
 
 exports.getDynamicContentData = async (req, res, next) => {
