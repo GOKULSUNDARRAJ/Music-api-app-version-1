@@ -485,7 +485,7 @@ function AssignCategoryView({ sectionId, contentType, onBack, onAssigned }) {
   return (
     <div style={{ background: '#fff', borderRadius: 20, padding: 30, boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 30 }}>
-        <button onClick={onBack} style={{ background: '#f1f5f9', border: 'none', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontWeight: 600 }}>← Back</button>
+        <button onClick={onBack} style={{ background: '#f1f5f9', color: '#1e293b', border: 'none', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontWeight: 600 }}>← Back</button>
         <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Assign Categories to Section <span style={{ color: '#6366f1' }}>{sectionId}</span></h2>
         <div style={{ marginLeft: 'auto' }}>
           <button 
@@ -622,7 +622,7 @@ function AssignSongView({ categoryId, contentType, onBack, onAssigned }) {
   return (
     <div style={{ background: '#fff', borderRadius: 20, padding: 30, boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 30 }}>
-        <button onClick={onBack} style={{ background: '#f1f5f9', border: 'none', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontWeight: 600 }}>← Back</button>
+        <button onClick={onBack} style={{ background: '#f1f5f9', color: '#1e293b', border: 'none', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontWeight: 600 }}>← Back</button>
         <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Assign Songs to Category</h2>
         <div style={{ marginLeft: 'auto' }}>
           <button 
