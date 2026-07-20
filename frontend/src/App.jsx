@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api, { setAuthToken } from './api';
 
-const TABS = ['Dashboard', 'Sections', 'Categories', 'Songs', 'Bulk Songs', 'Advanced Bulk', 'Attributes', 'Lyrics', 'Menu', 'Users', 'Ads'];
+const TABS = ['Dashboard', 'Sections', 'Categories', 'Advanced Bulk', 'Attributes', 'Lyrics', 'Menu', 'Users', 'Ads'];
 const formatEntityId = (prefix, id) => `${prefix}_${String(id).padStart(3, '0')}`;
 const CONTENT_TYPES = [
   { value: '', label: 'All' },
