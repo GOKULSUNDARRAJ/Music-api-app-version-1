@@ -103,17 +103,19 @@ function App() {
         </button>
       </aside>
       <main className="content">
-        <div className="toolbar content-type-toolbar">
-          <label>Manage content:</label>
-          <select value={contentType} onChange={(e) => setContentType(e.target.value)}>
-            {CONTENT_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        {activeTab !== 'Dashboard' && (
+        {['Dashboard', 'Sections', 'Categories'].includes(activeTab) && (
+          <div className="toolbar content-type-toolbar">
+            <label>Manage content:</label>
+            <select value={contentType} onChange={(e) => setContentType(e.target.value)}>
+              {CONTENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {['Sections', 'Categories'].includes(activeTab) && (
           <div className="toolbar content-type-toolbar">
             <small>Working on {contentType.toUpperCase()} content</small>
           </div>
