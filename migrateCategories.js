@@ -1,3 +1,4 @@
+require('dotenv').config();
 const sequelize = require('./config/database');
 const { Song, Category } = require('./models');
 const SongCategory = require('./models/SongCategory');
