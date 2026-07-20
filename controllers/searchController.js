@@ -149,12 +149,21 @@ exports.getCategorySongs = async (req, res, next) => {
       likes.forEach(l => userLikedSongs.add(l.songId));
     }
 
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const normalizeUrl = (url) => {
+      if (!url) return '';
+      if (url.startsWith('/uploads/')) return `${baseUrl}${url}`;
+      if (url.includes('localhost:')) return url.replace(/http:\/\/localhost:\d+/, baseUrl);
+      if (!url.startsWith('http')) return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+      return url;
+    };
+
     const songs = (category.songs || []).map(song => ({
       songId: formatEntityId('song', song.id),
       audioName: song.audioName,
-      audioUrl: song.audioUrl,
+      audioUrl: normalizeUrl(song.audioUrl),
       categoryName: category.categoryName,
-      imageUrl: song.imageUrl,
+      imageUrl: normalizeUrl(song.imageUrl),
       categoryId: formatEntityId('cat', song.categoryId),
       isLiked: userLikedSongs.has(song.id),
       lyrics: song.lyrics || null
