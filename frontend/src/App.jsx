@@ -594,9 +594,13 @@ function AssignSongView({ categoryId, contentType, onBack, onAssigned }) {
       setLoading(false);
     }
   };
-
-  const filtered = songs.filter(s => s.audioName.toLowerCase().includes(search.toLowerCase()) || (s.songId && s.songId.toLowerCase().includes(search.toLowerCase())));
-
+  const filtered = songs
+    .filter(s => s.audioName.toLowerCase().includes(search.toLowerCase()) || (s.songId && s.songId.toLowerCase().includes(search.toLowerCase())))
+    .sort((a, b) => {
+      const aSelected = selectedIds.has(a.id) ? 1 : 0;
+      const bSelected = selectedIds.has(b.id) ? 1 : 0;
+      return bSelected - aSelected;
+    });
   return (
     <div style={{ background: '#fff', borderRadius: 20, padding: 30, boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 30 }}>
