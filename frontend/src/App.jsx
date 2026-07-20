@@ -2460,6 +2460,7 @@ function AttributesManager({ onDataChange }) {
 
 function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
   const [categories, setCategories] = useState([]);
+  const [existingSongs, setExistingSongs] = useState([]);
   
   // Smart Sync State
   const [smartAudioFiles, setSmartAudioFiles] = useState([]);
@@ -2478,9 +2479,19 @@ function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
   const [smartReleaseYear, setSmartReleaseYear] = useState('');
   const [smartGenre, setSmartGenre] = useState('');
 
+  const loadExisting = async () => {
+    try {
+      const { data } = await api.get(`/admin/songs?contentType=${contentType}`);
+      setExistingSongs(data.slice(0, 50)); // Show top 50 recently added
+    } catch (err) {
+      console.error('Failed to load existing songs', err);
+    }
+  };
+
   useEffect(() => {
     api.get(`/admin/categories?contentType=${contentType}`).then(res => setCategories(res.data));
     api.get('/admin/attributes').then(res => setAttributes(res.data)).catch(console.error);
+    loadExisting();
   }, [contentType]);
 
   useEffect(() => {
@@ -2538,6 +2549,7 @@ function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
     setSmartImageFiles([]);
     setMatchedPairs([]);
     onDataChange();
+    await loadExisting();
     setIsUploading(false);
     if (failCount > 0) {
       alert(`Sync Complete: ${successCount} successful, ${failCount} failed. Error: ${lastErrorMsg}`);
@@ -2548,10 +2560,10 @@ function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
 
   return (
     <div className="bulk-page">
-      <section style={{ marginBottom: '30px' }}>
-        <div className="card" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%)', border: '1px solid #c2d2e0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <h2>🛸 Advanced Bulk Sync (Auto-Match + Metadata)</h2>
+        <section style={{ marginBottom: '30px' }}>
+          <div className="card" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%)', border: '1px solid #c2d2e0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h2>🛸 Advanced Bulk Sync (Auto-Match + Metadata)</h2>
             <p className="muted">Upload bulk files and assign actors, singers, etc., to all of them.</p>
           </div>
           
@@ -2646,11 +2658,54 @@ function AdvancedBulkSongs({ onDataChange, contentType, onEditRequest }) {
             </div>
           )}
 
-          <button className="primary" onClick={handleSmartUpload} disabled={isUploading} style={{ width: '100%', padding: '15px', fontWeight: '600' }}>
-            {isUploading ? 'Syncing...' : `Sync and Upload ${matchedPairs.length} Songs`}
-          </button>
-        </div>
-      </section>
-    </div>
+            <button className="primary" onClick={handleSmartUpload} disabled={isUploading} style={{ width: '100%', padding: '15px', fontWeight: '600' }}>
+              {isUploading ? 'Syncing...' : `Sync and Upload ${matchedPairs.length} Songs`}
+            </button>
+          </div>
+        </section>
+
+        <section style={{ marginTop: '40px' }}>
+          <h3>Recently Added Songs</h3>
+          <div className="table-container" style={{ border: '1px solid #eee', borderRadius: '8px' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>songId</th>
+                  <th>audioName</th>
+                  <th>audioUrl</th>
+                  <th>catId</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {existingSongs.length === 0 ? (
+                  <tr><td colSpan="5" className="muted" style={{ textAlign: 'center', padding: '20px' }}>No songs found</td></tr>
+                ) : (
+                  existingSongs.map(s => (
+                    <tr key={s.id}>
+                      <td><span className="id-badge">{s.songId || formatEntityId('song', s.id)}</span></td>
+                      <td>{s.audioName}</td>
+                      <td style={{ fontSize: '0.8rem', opacity: 0.7 }}>{s.audioUrl}</td>
+                      <td><span className="id-badge">{s.categoryIdFormatted || formatEntityId('cat', s.categoryId)}</span></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button className="small" onClick={() => onEditRequest(s)}>Edit</button>
+                          <button className="danger small" onClick={async () => {
+                            if (window.confirm(`Delete ${s.audioName}?`)) {
+                              await api.delete(`/admin/song/${s.id}`);
+                              await loadExisting();
+                              onDataChange();
+                            }
+                          }}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
   );
 }
