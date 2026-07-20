@@ -105,6 +105,7 @@ function App() {
               {tab === 'Lyrics' && '🎤'}
               {tab === 'Menu' && '🍔'}
               {tab === 'Users' && '👥'}
+              {tab === 'Ads' && '📢'}
             </span>
             {tab}
           </button>
