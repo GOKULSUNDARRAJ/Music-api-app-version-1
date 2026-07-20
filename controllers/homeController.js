@@ -4,6 +4,7 @@ const formatEntityId = (prefix, value) => `${prefix}_${String(value).padStart(3,
 
 const getContentData = async (req, res, next, contentType) => {
   try {
+    contentType = contentType.replace(/\s+/g, '').toLowerCase();
     const sections = await Section.findAll({
       where: { contentType },
       order: [['id', 'ASC']],
