@@ -129,6 +129,10 @@ exports.getHomeData = async (req, res, next) => getContentData(req, res, next, '
 exports.getDevotionalData = async (req, res, next) => getContentData(req, res, next, 'devotional');
 exports.getArtistData = async (req, res, next) => getContentData(req, res, next, 'artist');
 
+exports.getDynamicContentData = async (req, res, next) => {
+  return getContentData(req, res, next, req.params.type);
+};
+
 exports.getLikedSongsSection = async (req, res, next) => {
   try {
     const userId = req.userId;

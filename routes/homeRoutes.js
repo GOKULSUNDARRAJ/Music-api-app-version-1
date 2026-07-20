@@ -7,6 +7,7 @@ const { optionalUserAuth, requireUserAuth } = require('../middleware/authMiddlew
 router.get('/home', optionalUserAuth, homeController.getHomeData);
 router.get('/devotional', homeController.getDevotionalData);
 router.get('/artist', homeController.getArtistData);
+router.get('/content/:type', homeController.getDynamicContentData);
 router.get('/liked-songs', requireUserAuth, homeController.getLikedSongsSection);
 router.get('/menu', menuController.getMenu);
 

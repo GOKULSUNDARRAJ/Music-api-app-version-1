@@ -3,11 +3,6 @@ import api, { setAuthToken } from './api';
 
 const TABS = ['Dashboard', 'Sections', 'Categories', 'All Songs', 'Advanced Bulk', 'Attributes', 'Lyrics', 'Menu', 'Users', 'Ads'];
 const formatEntityId = (prefix, id) => `${prefix}_${String(id).padStart(3, '0')}`;
-const CONTENT_TYPES = [
-  { value: 'home', label: 'Home' },
-  { value: 'devotional', label: 'Devotional' },
-  { value: 'artist', label: 'Artist' }
-];
 
 
 function Login({ onSuccess }) {
@@ -55,6 +50,7 @@ function Login({ onSuccess }) {
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(Boolean(localStorage.getItem('adminToken')));
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [contentTypes, setContentTypes] = useState([{ value: 'home', label: 'Home' }]);
   const [contentType, setContentType] = useState('home');
   const [refreshKey, setRefreshKey] = useState(0);
   const [songToEdit, setSongToEdit] = useState(null);
@@ -62,6 +58,20 @@ function App() {
   const [initialFormSection, setInitialFormSection] = useState('');
 
   const onDataChange = () => setRefreshKey((p) => p + 1);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      api.get('/admin/menu?menuType=top').then(res => {
+        if (res.data && res.data.length > 0) {
+          const types = res.data.map(m => ({
+            value: m.menuName.toLowerCase().replace(/[^a-z0-9]/g, ''),
+            label: m.menuName
+          }));
+          setContentTypes(types);
+        }
+      }).catch(console.error);
+    }
+  }, [isLoggedIn, refreshKey]);
 
   if (!isLoggedIn) {
     return <Login onSuccess={() => setIsLoggedIn(true)} />;
@@ -106,8 +116,8 @@ function App() {
       <main className="content">
         {['Dashboard', 'Sections', 'Categories'].includes(activeTab) && (
           <div className="toolbar content-type-toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '32px' }}>
-            <div style={{ display: 'flex', gap: '8px', background: '#000', padding: '12px 16px', borderRadius: '30px' }}>
-              {CONTENT_TYPES.map((type) => (
+            <div style={{ display: 'flex', gap: '8px', background: '#000', padding: '12px 16px', borderRadius: '30px', overflowX: 'auto' }}>
+              {contentTypes.map((type) => (
                 <button
                   key={type.value}
                   onClick={() => setContentType(type.value)}
@@ -165,10 +175,7 @@ function Dashboard({ refreshKey, contentType, onDataChange }) {
   }, [refreshKey]);
 
   useEffect(() => {
-    let endpoint = '/home';
-    if (contentType === 'devotional') endpoint = '/devotional';
-    if (contentType === 'artist') endpoint = '/artist';
-    api.get(endpoint).then((res) => {
+    api.get(`/content/${contentType}`).then((res) => {
       setNestedData(res.data);
       // If a category is currently open, update its reference with the newly fetched data
       setSelectedCategory(prev => {
