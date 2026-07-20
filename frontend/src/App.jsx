@@ -1169,13 +1169,17 @@ function Songs({ onDataChange, contentType, initialEditSong, clearEditSong }) {
   const submit = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...form, categoryId: Number(form.categoryId) };
+      const payload = { 
+        ...form, 
+        categoryId: form.categoryIds && form.categoryIds.length > 0 ? Number(form.categoryIds[0]) : null,
+        categoryIds: form.categoryIds ? form.categoryIds.map(Number) : []
+      };
       if (editingId) {
         await api.put(`/admin/song/${editingId}`, payload);
       } else {
         await api.post('/admin/song', payload);
       }
-      setForm({ audioName: '', audioUrl: '', imageUrl: '', categoryId: '' });
+      setForm({ audioName: '', audioUrl: '', imageUrl: '', categoryIds: [] });
       setEditingId(null);
       await load();
       onDataChange();
@@ -1246,9 +1250,23 @@ function Songs({ onDataChange, contentType, initialEditSong, clearEditSong }) {
             <input type="text" value={form.imageUrl} onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))} />
           </div>
           <div>
-            <label>Category</label>
-            <select value={form.categoryId} onChange={(e) => setForm((p) => ({ ...p, categoryId: e.target.value }))} required>
-              <option value="">Select</option>
+            <label>Categories (Hold Ctrl/Cmd to select multiple)</label>
+            <select
+              multiple
+              style={{ minHeight: '100px' }}
+              value={form.categoryIds || []}
+              onChange={(e) => {
+                const options = e.target.options;
+                const value = [];
+                for (let i = 0, l = options.length; i < l; i++) {
+                  if (options[i].selected) {
+                    value.push(options[i].value);
+                  }
+                }
+                setForm((p) => ({ ...p, categoryIds: value }));
+              }}
+              required
+            >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.categoryName}</option>
               ))}
@@ -1256,7 +1274,7 @@ function Songs({ onDataChange, contentType, initialEditSong, clearEditSong }) {
           </div>
           <div className="actions" style={{ alignItems: 'flex-end', display: 'flex', gap: '10px' }}>
             <button type="submit">{editingId ? 'Update' : 'Add'}</button>
-            {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ audioName: '', audioUrl: '', imageUrl: '', categoryId: '' }); }}>Cancel</button>}
+            {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ audioName: '', audioUrl: '', imageUrl: '', categoryIds: [] }); }}>Cancel</button>}
           </div>
         </form>
       </div>
@@ -1281,7 +1299,12 @@ function Songs({ onDataChange, contentType, initialEditSong, clearEditSong }) {
                 <td>{item.audioName}</td>
                 <td>{item.audioUrl}</td>
                 <td>{item.imageUrl}</td>
-                <td><span className="id-badge">{item.categoryIdFormatted || formatEntityId('cat', item.categoryId)}</span></td>
+                <td>
+                  {item.categories && item.categories.length > 0 
+                    ? item.categories.map(c => <span key={c.id} className="id-badge" style={{marginRight: 4}}>{c.categoryName || `cat_${String(c.id).padStart(3, '0')}`}</span>) 
+                    : <span className="id-badge">{item.categoryIdFormatted || (item.categoryId ? `cat_${String(item.categoryId).padStart(3, '0')}` : 'None')}</span>
+                  }
+                </td>
                 <td>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => {
@@ -1290,7 +1313,7 @@ function Songs({ onDataChange, contentType, initialEditSong, clearEditSong }) {
                         audioName: item.audioName,
                         audioUrl: item.audioUrl,
                         imageUrl: item.imageUrl || '',
-                        categoryId: String(item.categoryId)
+                        categoryIds: item.categories ? item.categories.map(c => String(c.id)) : (item.categoryId ? [String(item.categoryId)] : [])
                       });
                     }}>Edit</button>
                     <button className="danger" onClick={async () => {

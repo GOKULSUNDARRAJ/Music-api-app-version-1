@@ -294,39 +294,14 @@ exports.updateCategorySongs = async (req, res, next) => {
 
     const { Op } = require('sequelize');
 
-    // 1. Remove categoryId from all songs currently in this category that are NOT in the selected list
-    if (selectedSongIds.length > 0) {
-      await Song.update(
-        { categoryId: null },
-        { 
-          where: { 
-            categoryId: categoryId,
-            id: { [Op.notIn]: selectedSongIds }
-          },
-          transaction
-        }
-      );
-    } else {
-      // If list is empty, remove categoryId from ALL songs currently in this category
-      await Song.update(
-        { categoryId: null },
-        { 
-          where: { categoryId: categoryId },
-          transaction
-        }
-      );
-    }
+    // Use Many-to-Many association to update SongCategories table
+    await category.setSongs(selectedSongIds, { transaction });
 
-    // 2. Add categoryId to all songs in the selected list
+    // Fallback for legacy apps to maintain the primary categoryId on the Song
     if (selectedSongIds.length > 0) {
       await Song.update(
         { categoryId: categoryId },
-        { 
-          where: { 
-            id: { [Op.in]: selectedSongIds }
-          },
-          transaction
-        }
+        { where: { id: selectedSongIds }, transaction }
       );
     }
 
@@ -367,6 +342,10 @@ exports.createSong = async (req, res, next) => {
     }
 
     const song = await Song.create({ audioName, audioUrl, imageUrl, categoryId, actorName, heroineName, singerName, movieName, musicDirector, releaseYear, genre });
+    
+    // Support multiple categories natively through SongCategories
+    const catsToSet = req.body.categoryIds ? req.body.categoryIds : [categoryId];
+    await song.setCategories(catsToSet);
 
 
     return res.status(201).json(songDto(song));
@@ -443,6 +422,11 @@ exports.updateSong = async (req, res, next) => {
       releaseYear: releaseYear !== undefined ? releaseYear : song.releaseYear,
       genre: genre !== undefined ? genre : song.genre
     });
+
+    if (req.body.categoryIds || categoryId) {
+      const catsToSet = req.body.categoryIds ? req.body.categoryIds : [categoryId];
+      await song.setCategories(catsToSet);
+    }
 
 
 
@@ -572,6 +556,16 @@ exports.bulkCreateSongs = async (req, res, next) => {
       releaseYear: s.releaseYear || null,
       genre: s.genre || null
     })), { transaction });
+
+    // Populate SongCategories many-to-many junction table
+    const { SongCategory } = require('../models');
+    if (SongCategory) {
+      const songCategories = createdSongs.map(song => ({
+        songId: song.id,
+        categoryId: song.categoryId
+      }));
+      await SongCategory.bulkCreate(songCategories, { transaction });
+    }
 
     await transaction.commit();
     return res.status(201).json(createdSongs.map(songDto));
