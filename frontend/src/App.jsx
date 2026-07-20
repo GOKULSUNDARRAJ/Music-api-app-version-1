@@ -559,11 +559,16 @@ function AssignSongView({ categoryId, contentType, onBack, onAssigned }) {
 
   useEffect(() => {
     api.get(`/admin/songs?contentType=${contentType}`)
-      .then(res => setSongs(res.data.filter(s => {
-        const inJunction = s.categories?.some(c => String(c.id) === String(categoryId));
-        const inPrimary = String(s.categoryId) === String(categoryId);
-        return !inJunction && !inPrimary;
-      })))
+      .then(res => {
+        setSongs(res.data);
+        const preSelected = new Set();
+        res.data.forEach(s => {
+          const inJunction = s.categories?.some(c => String(c.id) === String(categoryId));
+          const inPrimary = String(s.categoryId) === String(categoryId);
+          if (inJunction || inPrimary) preSelected.add(s.id);
+        });
+        setSelectedIds(preSelected);
+      })
       .catch(err => console.error(err));
   }, [contentType, categoryId]);
 
@@ -575,19 +580,16 @@ function AssignSongView({ categoryId, contentType, onBack, onAssigned }) {
   };
 
   const handleAssign = async () => {
-    if (selectedIds.size === 0) return;
     setLoading(true);
     try {
       const rawCategoryId = parseInt(String(categoryId).replace(/\D/g, ''), 10);
-      await Promise.all(
-        Array.from(selectedIds).map(id => 
-          api.put(`/admin/song/${id}`, { categoryId: rawCategoryId })
-        )
-      );
+      await api.put(`/admin/category/${rawCategoryId}/songs`, { 
+        selectedSongIds: Array.from(selectedIds) 
+      });
       onAssigned();
     } catch (err) {
       console.error(err);
-      alert('Failed to assign some songs.');
+      alert('Failed to assign songs.');
     } finally {
       setLoading(false);
     }
@@ -603,10 +605,10 @@ function AssignSongView({ categoryId, contentType, onBack, onAssigned }) {
         <div style={{ marginLeft: 'auto' }}>
           <button 
             onClick={handleAssign} 
-            disabled={selectedIds.size === 0 || loading}
-            style={{ background: '#ec4899', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 10, fontWeight: 700, cursor: selectedIds.size > 0 ? 'pointer' : 'not-allowed', opacity: selectedIds.size > 0 ? 1 : 0.5, transition: 'all 0.2s' }}
+            disabled={loading}
+            style={{ background: '#ec4899', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 10, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, transition: 'all 0.2s' }}
           >
-            {loading ? 'Assigning...' : `Assign Selected (${selectedIds.size})`}
+            {loading ? 'Saving...' : `Save Assignments (${selectedIds.size})`}
           </button>
         </div>
       </div>
