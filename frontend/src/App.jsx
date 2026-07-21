@@ -2502,7 +2502,20 @@ function AllSongsTab({ onDataChange, contentType }) {
                   {[s.actorName, s.heroineName, s.singerName, s.movieName, s.musicDirector, s.releaseYear, s.genre].filter(Boolean).join(' • ')}
                 </td>
                 <td>
-                  <button className="small" onClick={() => setEditingSong(s)}>Edit</button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="small" onClick={() => setEditingSong(s)}>Edit</button>
+                    <button className="danger small" onClick={async () => {
+                      if (window.confirm(`Delete ${s.audioName}?`)) {
+                        try {
+                          await api.delete(`/admin/song/${s.id}`);
+                          loadSongs();
+                          onDataChange();
+                        } catch (err) {
+                          alert('Failed to delete: ' + (err.response?.data?.message || err.message));
+                        }
+                      }
+                    }}>Delete</button>
+                  </div>
                 </td>
               </tr>
             ))}
